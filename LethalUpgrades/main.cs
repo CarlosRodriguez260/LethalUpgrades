@@ -20,10 +20,15 @@ public class LethalUpgradesBase : BaseUnityPlugin
     private const string modName = "Lethal Upgrades Mod";
     private const string modVersion = "0.1";
 
-    private readonly Harmony harmony = new Harmony (modGUID);
+    private readonly Harmony harmony = new Harmony(modGUID);
     internal static LethalUpgradesBase Instance;
     internal static ManualLogSource mls;
     internal static ConfigurationController ConfigManager;
+
+    [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave)]
+    public static int tokens = 0;
+    [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave)]
+    public static int token_meter = 0;
 
     [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave)]
     public static bool health_t1 = false;
@@ -40,6 +45,8 @@ public class LethalUpgradesBase : BaseUnityPlugin
     public static bool stamina_t2 = false;
     [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave)]
     public static bool stamina_t3= false;
+    [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave)]
+    public static bool stamina_leg = false;
 
     [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave)]
     public static bool movement_t1 = false;
@@ -47,6 +54,8 @@ public class LethalUpgradesBase : BaseUnityPlugin
     public static bool movement_t2 = false;
     [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave)]
     public static bool movement_t3 = false;
+    [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave)]
+    public static bool movement_leg = false;
 
     void Awake()
     {
@@ -60,52 +69,59 @@ public class LethalUpgradesBase : BaseUnityPlugin
         harmony.PatchAll(typeof(HealthPatching));
         harmony.PatchAll(typeof(StaminaPatching));
         harmony.PatchAll(typeof(MovementPatching));
-        harmony.PatchAll(typeof(DebugPatching));
+        // harmony.PatchAll(typeof(DebugPatching)); //Uncomment to have logs in BepInEx console
+        harmony.PatchAll(typeof(TokenPatching));
         ConfigManager = new ConfigurationController(Config);
 
         #region Terminal Commands
         AddCommand("upgrade",
         "Thank you for joining the *LETHAL UPGRADES* program.\n" +
-        "In exchange for credits, we can provide upgrades that work for everyones suit's or equipment.\n" +
+        "In exchange for credits, we can provide upgrades that should boost your quota-reaching efficiency!.\n" +
         "We currently provide the following types of [UPGRADES]:\n" +
         "- Health\n" +
         "- Stamina\n"+
         "- Movement\n" +
         "- Utilities\n\n" +
 
-        "Each category has 3 tiers with differing costs. If you manage to unlock all tiers in one category,\n" +
-        "you get a special token to access a new, legendary upgrade free of charge!. Thank you for trusting us with your mission.\n\n" +
+        "Each category has 3 tiers with differing costs, providing a plethora of different changes.\n" +
+        "A special token can be acquired by proving your loot-gathering and survival skills, which can be turned in for free legendary upgrades!\n\n" +
         
         "To see information about each upgrade, type 'upgrade [UPGRADE] info'\n" +
-        "To buy an upgrade, type 'upgrade [UPGRADE] [TIER]'\n");
+        "To buy an upgrade, type 'upgrade [UPGRADE] [TIER]'\n" +
+        "To learn how to get tokens, type 'upgrade token'\n");
 
+        AddCommand("upgrade token",
+        "Special tokens, denoted by Ŧ, are utilized to obtain legendary upgrades from each tier. " +
+        "Unlike normal upgrades, you can use a token to buy any of the available legendary ones.\n\n" +
+        "These tokens can only be acquired via good, cummulative performances on moons. Good luck!\n");
+        
         AddCommand("upgrade health info",
         "These upgrades affect your health. They consist of the following:\n" +
-        "- Tier 1: Gain +20 additional health. Cost: ▮200\n" +
-        "- Tier 2: Reduce all incoming damage by 5%. Cost: ▮300\n" +
-        "- Tier 3: Gain an adaptive regeneration ability. Cost: ▮400\n" +
-        "- Legendary: Gain +30 additional health.\n\n" +
-        "NOTE: Health upgrades only apply while in orbit.\n");
+        "- Tier 1: Gain +20 additional health. Cost: $200\n" +
+        "- Tier 2: Reduce all incoming damage by 5%. Cost: $300\n" +
+        "- Tier 3: Gain +30 additional health. Cost: $400\n" +
+        "- Legendary: Gain an adaptive regeneration ability.\n\n" +
+        "NOTE: Health-increasing upgrades only apply while in orbit.\n");
 
         AddCommand("upgrade stamina info",
         "These upgrades affect your stamina. They consist of the following:\n" +
-        "- Tier 1: Increase stamina amount by 30%. Cost: ▮250\n" +
-        "- Tier 2: Improve stamina regen by 5%. Cost: ▮300\n" +
-        "- Tier 3: Reduced stamina consumption when heavy (>=40 lbs) by 50%. Cost: ▮400\n" +
-        "- Legendary: When in danger, gain infinite stamina. After escaping danger, goes on cooldown for 30 seconds.\n");
+        "- Tier 1: Decrease running stamina usage. Cost: $250\n" +
+        "- Tier 2: Improve stamina regen by 5%. Cost: $300\n" +
+        "- Tier 3: Reduced stamina consumption when heavy (>=40 lbs) by 50%. Cost: $400\n" +
+        "- Legendary: When damaged, regardless of amount or source, gain full stamina back.\n");
 
         AddCommand("upgrade movement info",
         "These upgrades affect your movement. They consist of the following:\n" +
-        "- Tier 1: Sprint 6% faster. Cost: ▮100\n" +
-        "- Tier 2: Walk/Crouch 12% faster. Cost: ▮250\n" +
-        "- Tier 3: Jump height increased. Cost: ▮300\n" +
-        "- Legendary: All movement speed is 5% faster. When in danger, gain 10% more movement speed. After escaping danger, goes on cooldown for 30 seconds.\n");
+        "- Tier 1: Sprint 6% faster. Cost: $100\n" +
+        "- Tier 2: Walk/Crouch 12% faster. Cost: $250\n" +
+        "- Tier 3: Jump height increased by 25%. Cost: $300\n" +
+        "- Legendary: While critically injured, become invisible.\n");
 
         AddCommand("upgrade utilities info",
         "These upgrades affect your equipment or utilities. They consist of the following:\n" +
-        "- Tier 1: Increase ALL battery capacities by 10%. Cost: ▮300\n" +
-        "- Tier 2: Reduce cost of all store items by 10%. Cost: ▮450\n" +
-        "- Tier 3: Flashlights items can pass through the inverse teleporter. Cost: ▮500\n" +
+        "- Tier 1: Increase ALL battery capacities by 10%. Cost: $300\n" +
+        "- Tier 2: Reduce cost of all store items by 10%. Cost: $450\n" +
+        "- Tier 3: Flashlights items can pass through the inverse teleporter. Cost: $500\n" +
         "- Legendary: All equipment weighs 0 pounds.\n");
 
         AddCommand("give money", new CommandInfo()
@@ -115,6 +131,15 @@ public class LethalUpgradesBase : BaseUnityPlugin
                 var terminal = UnityEngine.Object.FindFirstObjectByType<Terminal>();
                 terminal.groupCredits += 500;
                 return "Gave you 500 moneys for testing.\n";
+            }, Category = "Other"
+        });
+
+        AddCommand("give meter", new CommandInfo()
+        {
+            DisplayTextSupplier = () =>
+            {
+                token_meter += 50;
+                return "Filled up half your token meter.\n";
             }, Category = "Other"
         });
         #endregion
@@ -135,11 +160,11 @@ public class LethalUpgradesBase : BaseUnityPlugin
 
                 if (groupCredits < cost)
                 {
-                    return $"Not enough credits for this upgrade. You need ▮{cost}\n";
+                    return $"Not enough credits for this upgrade. You need ${cost}\n";
                 }
                 terminal.groupCredits = groupCredits - cost;
                 health_t1 = true;
-                return $"Upgrade acquired. New balance of ▮{terminal.groupCredits}\n";
+                return $"Upgrade acquired. New balance of ${terminal.groupCredits}\n";
             }, Category = "Other"
         });
 
@@ -163,11 +188,11 @@ public class LethalUpgradesBase : BaseUnityPlugin
 
                 if (groupCredits < cost)
                 {
-                    return $"Not enough credits for this upgrade. You need ▮{cost}\n";
+                    return $"Not enough credits for this upgrade. You need ${cost}\n";
                 }
                 terminal.groupCredits = groupCredits - cost;
                 health_t2 = true;
-                return $"Upgrade acquired. New balance of ▮{terminal.groupCredits}\n";
+                return $"Upgrade acquired. New balance of ${terminal.groupCredits}\n";
             }, Category = "Other"
         });
 
@@ -195,11 +220,11 @@ public class LethalUpgradesBase : BaseUnityPlugin
 
                 if (groupCredits < cost)
                 {
-                    return $"Not enough credits for this upgrade. You need ▮{cost}\n";
+                    return $"Not enough credits for this upgrade. You need ${cost}\n";
                 }
                 terminal.groupCredits = groupCredits - cost;
                 health_t3 = true;
-                return $"Upgrade acquired. New balance of ▮{terminal.groupCredits}\n";
+                return $"Upgrade acquired. New balance of ${terminal.groupCredits}\n";
             }, Category = "Other"
         });
         #endregion
@@ -220,7 +245,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
 
                 if (groupCredits < cost)
                 {
-                    return $"Not enough credits for this upgrade. You need ▮{cost}\n";
+                    return $"Not enough credits for this upgrade. You need ${cost}\n";
                 }
                 terminal.groupCredits = groupCredits - cost;
                 stamina_t1 = true;
@@ -230,7 +255,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
                 {
                     sor.allPlayerScripts[i].sprintTime = sor.allPlayerScripts[i].sprintTime * 1.3f; 
                 }
-                return $"Upgrade acquired. New balance of ▮{terminal.groupCredits}\n";
+                return $"Upgrade acquired. New balance of ${terminal.groupCredits}\n";
             }, Category = "Other"
         });
         #endregion
@@ -251,12 +276,12 @@ public class LethalUpgradesBase : BaseUnityPlugin
 
                 if (groupCredits < cost)
                 {
-                    return $"Not enough credits for this upgrade. You need ▮{cost}\n";
+                    return $"Not enough credits for this upgrade. You need ${cost}\n";
                 }
                 terminal.groupCredits = groupCredits - cost;
                 movement_t1 = true;
 
-                return $"Upgrade acquired. New balance of ▮{terminal.groupCredits}\n";
+                return $"Upgrade acquired. New balance of ${terminal.groupCredits}\n";
             }, Category = "Other"
         });
 
@@ -280,12 +305,12 @@ public class LethalUpgradesBase : BaseUnityPlugin
 
                 if (groupCredits < cost)
                 {
-                    return $"Not enough credits for this upgrade. You need ▮{cost}\n";
+                    return $"Not enough credits for this upgrade. You need ${cost}\n";
                 }
                 terminal.groupCredits = groupCredits - cost;
                 movement_t2 = true;
 
-                return $"Upgrade acquired. New balance of ▮{terminal.groupCredits}\n";
+                return $"Upgrade acquired. New balance of ${terminal.groupCredits}\n";
             }, Category = "Other"
         });
 
@@ -313,12 +338,12 @@ public class LethalUpgradesBase : BaseUnityPlugin
 
                 if (groupCredits < cost)
                 {
-                    return $"Not enough credits for this upgrade. You need ▮{cost}\n";
+                    return $"Not enough credits for this upgrade. You need ${cost}\n";
                 }
                 terminal.groupCredits = groupCredits - cost;
                 movement_t3 = true;
 
-                return $"Upgrade acquired. New balance of ▮{terminal.groupCredits}\n";
+                return $"Upgrade acquired. New balance of ${terminal.groupCredits}\n";
             }, Category = "Other"
         });
         #endregion

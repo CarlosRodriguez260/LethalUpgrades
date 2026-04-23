@@ -21,11 +21,13 @@ internal class DebugPatching
         {
             lastLogTime = Time.time;
             var player = GameNetworkManager.Instance?.localPlayerController;
+            var terminalNode = UnityEngine.Object.FindFirstObjectByType<Terminal>();
             if (player != null)
             {
                 LethalUpgradesBase.mls.LogInfo($"Movement Speed: {player.movementSpeed:R}");
                 LethalUpgradesBase.mls.LogInfo($"Crouching?: {player.isCrouching}");
                 LethalUpgradesBase.mls.LogInfo($"Jump Strength: {player.jumpForce}");
+                LethalUpgradesBase.mls.LogInfo($"Terminal In Use?: {terminalNode.terminalInUse}");
             }
         }
     }
