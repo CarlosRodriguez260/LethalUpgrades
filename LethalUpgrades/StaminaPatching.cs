@@ -56,5 +56,64 @@ internal class StaminaPatching
     #endregion 
 
     #region Stamina Tier 3
+    [HarmonyPatch(typeof(PlayerControllerB), "LateUpdate")]
+    [HarmonyPostfix]
+    static void StaminaTier3(PlayerControllerB __instance)
+    {
+        if (__instance == null) return;
+        if (__instance != GameNetworkManager.Instance?.localPlayerController) return;
+
+        if(LethalUpgradesBase.stamina_t3 && __instance.isSprinting && __instance.carryWeight>=1.48f)
+        {
+            __instance.sprintMeter = Mathf.Clamp(__instance.sprintMeter + Time.deltaTime / og_sprintTime * __instance.carryWeight/8 * num3, 0f, 1f);
+        }
+    }
+    // internal static float static_weight = 0;
+    // internal static float copy_player_weight = 0;
+    // internal static float delta_weight = 0;
+    // internal static bool active = false;
+    // internal static int frameCounter = 0;
+
+    // [HarmonyPatch(typeof(PlayerControllerB), "LateUpdate")]
+    // [HarmonyPrefix]
+    // static void PreWeight(PlayerControllerB __instance)
+    // {
+    //     frameCounter++;
+    //     float beforeWeight = __instance.carryWeight;
+        
+    //     if(!active)
+    //     {
+    //         static_weight = __instance.carryWeight;
+    //         LethalUpgradesBase.mls.LogInfo($"[Frame {frameCounter}] NOT ACTIVE: Set static_weight = {static_weight:F4}");
+    //     }
+    //     else
+    //     {
+    //         delta_weight = __instance.carryWeight - copy_player_weight;
+    //         static_weight += delta_weight;
+    //         LethalUpgradesBase.mls.LogInfo($"[Frame {frameCounter}] ACTIVE: currentWeight={__instance.carryWeight:F4}, copy={copy_player_weight:F4}, delta={delta_weight:F4}, static_weight={static_weight:F4}");
+    //     }
+
+    //     if(LethalUpgradesBase.stamina_t3 && static_weight >= 1.48 && !active)
+    //     {
+    //         LethalUpgradesBase.mls.LogInfo($"[Frame {frameCounter}] ACTIVATING! static_weight={static_weight:F4} >= 1.48");
+    //         active = true;
+    //         float newWeight = __instance.carryWeight - (__instance.carryWeight-1)/2;
+    //         __instance.carryWeight = newWeight;
+    //         copy_player_weight = __instance.carryWeight;
+    //         LethalUpgradesBase.mls.LogInfo($"[Frame {frameCounter}] New weight: {newWeight:F4}, copy_player_weight={copy_player_weight:F4}");
+    //     }
+    //     else if(LethalUpgradesBase.stamina_t3 && static_weight < 1.48 && active)
+    //     {
+    //         LethalUpgradesBase.mls.LogInfo($"[Frame {frameCounter}] DEACTIVATING! static_weight={static_weight:F4} < 1.48");
+    //         __instance.carryWeight = static_weight;
+    //         active = false;
+    //         copy_player_weight = 0;
+    //         static_weight = 0;
+    //         delta_weight = 0;
+    //         LethalUpgradesBase.mls.LogInfo($"[Frame {frameCounter}] Restored weight to: {__instance.carryWeight:F4}");
+    //     }
+        
+    //     LethalUpgradesBase.mls.LogInfo($"[Frame {frameCounter}] Final weight: {__instance.carryWeight:F4}, active={active}");
+    // }
     #endregion 
 }

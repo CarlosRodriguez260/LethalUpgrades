@@ -107,7 +107,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
         "These upgrades affect your stamina. They consist of the following:\n" +
         "- Tier 1: Decrease running stamina usage. Cost: $300\n" + //Done
         "- Tier 2: Improve stamina regen by 10%. Cost: $400\n" + //Done
-        "- Tier 3: Reduced stamina consumption when heavy (>=40 lbs) by 50%. Cost: $500\n" +
+        "- Tier 3: Reduced stamina penalties when heavy (>=50 lbs). Cost: $500\n" +
         "- Legendary: When damaged, regardless of amount or source, gain full stamina back.\n");
 
         AddCommand("upgrade movement info",
@@ -277,6 +277,38 @@ public class LethalUpgradesBase : BaseUnityPlugin
                 }
                 terminal.groupCredits = groupCredits - cost;
                 stamina_t2 = true;
+                return $"Upgrade acquired. New balance of ${terminal.groupCredits}\n";
+            }, Category = "Other"
+        });
+
+        AddCommand("upgrade stamina 3", new CommandInfo()
+        {
+            DisplayTextSupplier = () =>
+            {
+                if(stamina_t3)
+                {
+                    return "You already have this upgrade!\n";  
+                }
+
+                var cost = 500;
+                var terminal = UnityEngine.Object.FindFirstObjectByType<Terminal>();
+                var groupCredits = terminal.groupCredits;
+
+                if(!stamina_t1)
+                {
+                    return $"Come on man you don't even have the tier 1...\n";
+                }
+                if(!stamina_t2)
+                {
+                    return "You require the tier 2 stamina upgrade before this!\n";
+                }
+
+                if (groupCredits < cost)
+                {
+                    return $"Not enough credits for this upgrade. You need ${cost}\n";
+                }
+                terminal.groupCredits = groupCredits - cost;
+                stamina_t3 = true;
                 return $"Upgrade acquired. New balance of ${terminal.groupCredits}\n";
             }, Category = "Other"
         });

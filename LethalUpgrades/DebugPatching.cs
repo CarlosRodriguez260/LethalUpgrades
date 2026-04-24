@@ -28,7 +28,8 @@ internal class DebugPatching
                 LethalUpgradesBase.mls.LogInfo($"Movement Speed: {player.movementSpeed:R}");
                 LethalUpgradesBase.mls.LogInfo($"Crouching?: {player.isCrouching}");
                 LethalUpgradesBase.mls.LogInfo($"Jump Strength: {player.jumpForce}");
-                LethalUpgradesBase.mls.LogInfo($"Terminal In Use?: {terminalNode.terminalInUse}");
+                // LethalUpgradesBase.mls.LogInfo($"Terminal In Use?: {terminalNode.terminalInUse}");
+                LethalUpgradesBase.mls.LogInfo($"Carry Weight: {player.carryWeight}");
             }
         }
     }

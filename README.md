@@ -12,7 +12,7 @@ Health
 Stamina
 - Tier 1: Decrease running stamina usage. [DONE] 
 - Tier 2: Improve stamina regen by 10%. [DONE] [NEEDS TESTING]
-- Tier 3: Reduced stamina consumption when heavy (>=50 lbs) by 50%. 
+- Tier 3: Reduced stamina penalties when heavy (>=50 lbs). [DONE]
 
 Movement
 - Tier 1: Sprint 6% faster. [DONE]
