@@ -97,24 +97,24 @@ public class LethalUpgradesBase : BaseUnityPlugin
         
         AddCommand("upgrade health info",
         "These upgrades affect your health. They consist of the following:\n" +
-        "- Tier 1: Gain +20 additional health. Cost: $200\n" +
-        "- Tier 2: Reduce all incoming damage by 5%. Cost: $300\n" +
-        "- Tier 3: Gain +30 additional health. Cost: $400\n" +
-        "- Legendary: Gain an adaptive regeneration ability.\n\n" +
+        "- Tier 1: Gain +20 additional health. Cost: $200\n" + //Done
+        "- Tier 2: Reduce all incoming damage by 5%. Cost: $300\n" + //Done
+        "- Tier 3: Gain +30 additional health. Cost: $400\n" + //Done
+        "- Legendary: Gain an adaptive regeneration ability.\n\n" + 
         "NOTE: Health-increasing upgrades only apply while in orbit.\n");
 
         AddCommand("upgrade stamina info",
         "These upgrades affect your stamina. They consist of the following:\n" +
-        "- Tier 1: Decrease running stamina usage. Cost: $250\n" +
-        "- Tier 2: Improve stamina regen by 5%. Cost: $300\n" +
-        "- Tier 3: Reduced stamina consumption when heavy (>=40 lbs) by 50%. Cost: $400\n" +
+        "- Tier 1: Decrease running stamina usage. Cost: $300\n" + //Done
+        "- Tier 2: Improve stamina regen by 10%. Cost: $400\n" + //Done
+        "- Tier 3: Reduced stamina consumption when heavy (>=40 lbs) by 50%. Cost: $500\n" +
         "- Legendary: When damaged, regardless of amount or source, gain full stamina back.\n");
 
         AddCommand("upgrade movement info",
         "These upgrades affect your movement. They consist of the following:\n" +
-        "- Tier 1: Sprint 6% faster. Cost: $150\n" +
-        "- Tier 2: Walk/Crouch 12% faster. Cost: $275\n" +
-        "- Tier 3: Jump height increased by 25%. Cost: $350\n" +
+        "- Tier 1: Sprint 6% faster. Cost: $150\n" + //Done
+        "- Tier 2: Walk/Crouch 12% faster. Cost: $275\n" + //Done
+        "- Tier 3: Jump height increased by 25%. Cost: $350\n" + //Done
         "- Legendary: While critically injured, become invisible.\n");
 
         AddCommand("upgrade utilities info",
@@ -239,7 +239,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
                     return "You already have this upgrade!\n";  
                 }
 
-                var cost = 250;
+                var cost = 300;
                 var terminal = UnityEngine.Object.FindFirstObjectByType<Terminal>();
                 var groupCredits = terminal.groupCredits;
 
@@ -249,6 +249,34 @@ public class LethalUpgradesBase : BaseUnityPlugin
                 }
                 terminal.groupCredits = groupCredits - cost;
                 stamina_t1 = true;
+                return $"Upgrade acquired. New balance of ${terminal.groupCredits}\n";
+            }, Category = "Other"
+        });
+
+        AddCommand("upgrade stamina 2", new CommandInfo()
+        {
+            DisplayTextSupplier = () =>
+            {
+                if(stamina_t2)
+                {
+                    return "You already have this upgrade!\n";  
+                }
+
+                var cost = 400;
+                var terminal = UnityEngine.Object.FindFirstObjectByType<Terminal>();
+                var groupCredits = terminal.groupCredits;
+
+                if(!stamina_t1)
+                {
+                    return "You require the tier 1 stamina upgrade before this!\n";
+                }
+
+                if (groupCredits < cost)
+                {
+                    return $"Not enough credits for this upgrade. You need ${cost}\n";
+                }
+                terminal.groupCredits = groupCredits - cost;
+                stamina_t2 = true;
                 return $"Upgrade acquired. New balance of ${terminal.groupCredits}\n";
             }, Category = "Other"
         });
