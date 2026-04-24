@@ -1,3 +1,5 @@
+![Logo][./LethalUpgradesLogo.png]
+
 The upgrades so far are as follows:
 
 Health
