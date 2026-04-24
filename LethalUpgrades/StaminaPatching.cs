@@ -12,16 +12,17 @@ namespace LethalUpgrades.Patches;
 internal class StaminaPatching
 {
     #region Stamina Tier 1
-    [HarmonyPatch(typeof(PlayerControllerB), "Awake")]
+    internal static float stamina_t1 = 11 * 1.3f;
+    [HarmonyPatch(typeof(PlayerControllerB), "Update")]
     [HarmonyPostfix]
     static void StaminaTier1(PlayerControllerB __instance)
     {
         if (__instance == null) return;
         if (__instance != GameNetworkManager.Instance?.localPlayerController) return;
 
-        if (LethalUpgradesBase.stamina_t1)
+        if (LethalUpgradesBase.stamina_t1 && __instance.sprintTime!=stamina_t1)
         {
-            __instance.sprintMeter = __instance.sprintMeter * 1.3f;
+            __instance.sprintTime = stamina_t1;
         }
     }
     #endregion 

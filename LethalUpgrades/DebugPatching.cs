@@ -24,6 +24,7 @@ internal class DebugPatching
             var terminalNode = UnityEngine.Object.FindFirstObjectByType<Terminal>();
             if (player != null)
             {
+                LethalUpgradesBase.mls.LogInfo($"Sprint Time: {player.sprintTime:R}");
                 LethalUpgradesBase.mls.LogInfo($"Movement Speed: {player.movementSpeed:R}");
                 LethalUpgradesBase.mls.LogInfo($"Crouching?: {player.isCrouching}");
                 LethalUpgradesBase.mls.LogInfo($"Jump Strength: {player.jumpForce}");

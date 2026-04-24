@@ -69,7 +69,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
         harmony.PatchAll(typeof(HealthPatching));
         harmony.PatchAll(typeof(StaminaPatching));
         harmony.PatchAll(typeof(MovementPatching));
-        // harmony.PatchAll(typeof(DebugPatching)); //Uncomment to have logs in BepInEx console
+        harmony.PatchAll(typeof(DebugPatching)); //Uncomment to have logs in BepInEx console
         harmony.PatchAll(typeof(TokenPatching));
         ConfigManager = new ConfigurationController(Config);
 
@@ -112,9 +112,9 @@ public class LethalUpgradesBase : BaseUnityPlugin
 
         AddCommand("upgrade movement info",
         "These upgrades affect your movement. They consist of the following:\n" +
-        "- Tier 1: Sprint 6% faster. Cost: $100\n" +
-        "- Tier 2: Walk/Crouch 12% faster. Cost: $250\n" +
-        "- Tier 3: Jump height increased by 25%. Cost: $300\n" +
+        "- Tier 1: Sprint 6% faster. Cost: $150\n" +
+        "- Tier 2: Walk/Crouch 12% faster. Cost: $275\n" +
+        "- Tier 3: Jump height increased by 25%. Cost: $350\n" +
         "- Legendary: While critically injured, become invisible.\n");
 
         AddCommand("upgrade utilities info",
@@ -249,12 +249,6 @@ public class LethalUpgradesBase : BaseUnityPlugin
                 }
                 terminal.groupCredits = groupCredits - cost;
                 stamina_t1 = true;
-
-                var sor = UnityEngine.Object.FindFirstObjectByType<StartOfRound>();
-                for(int i = 0; i < sor.allPlayerScripts.Length; i++)
-                {
-                    sor.allPlayerScripts[i].sprintTime = sor.allPlayerScripts[i].sprintTime * 1.3f; 
-                }
                 return $"Upgrade acquired. New balance of ${terminal.groupCredits}\n";
             }, Category = "Other"
         });
@@ -270,7 +264,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
                     return "You already have this upgrade!\n";  
                 }
 
-                var cost = 100;
+                var cost = 150;
                 var terminal = UnityEngine.Object.FindFirstObjectByType<Terminal>();
                 var groupCredits = terminal.groupCredits;
 
@@ -294,7 +288,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
                     return "You already have this upgrade!\n";  
                 }
 
-                var cost = 250;
+                var cost = 275;
                 var terminal = UnityEngine.Object.FindFirstObjectByType<Terminal>();
                 var groupCredits = terminal.groupCredits;
 
