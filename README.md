@@ -1,4 +1,6 @@
-![Logo][./LethalUpgradesLogo.png]
+<div align="center">
+  <img src="./LethalUpgradesLogo.png" alt="Lethal Upgrades Mod Logo" width="400">
+</div>
 
 The upgrades so far are as follows:
 
