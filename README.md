@@ -1,4 +1,4 @@
-<div align="center">
+<div>
   <img src="./LethalUpgradesLogo.png" alt="Lethal Upgrades Mod Logo" width="400">
 </div>
 
