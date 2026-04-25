@@ -38,10 +38,16 @@
       <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Lethal Company\Lethal Company_Data\Managed\Unity.TextMeshPro.dll</HintPath>
     </Reference>
     <Reference Include="TerminalApi">
-      <HintPath>../Dependencies/TerminalApi.dll</HintPath>
+      <HintPath>../Dependencies/plugins/TerminalApi.dll</HintPath>
     </Reference>
     <Reference Include="MaxWasUnavailable.LethalModDataLib">
-      <HintPath>../Dependencies/MaxWasUnavailable.LethalModDataLib.dll</HintPath>
+      <HintPath>../Dependencies/plugins/MaxWasUnavailable.LethalModDataLib.dll</HintPath>
+    </Reference>
+    <Reference Include="LethalNetworkAPI">
+      <HintPath>../Dependencies/plugins/LethalNetworkAPI.dll</HintPath>
+    </Reference>
+    <Reference Include="OdinSerializer">
+      <HintPath>../Dependencies/core/OdinSerializer.dll</HintPath>
     </Reference>
 </ItemGroup>
 </Project>

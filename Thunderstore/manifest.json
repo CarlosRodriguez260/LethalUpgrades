@@ -1,0 +1,13 @@
+{
+    "name": "LethalUpgrades",
+    "version_number": "1.0.8",
+    "website_url": "https://github.com/CarlosRodriguez260/LethalUpgrades",
+    "description": "Lethal Upgrades, whatever happened there?",
+    "dependencies": [
+        "BepInEx-BepInExPack-5.4.2100",
+        "xilophor-LethalNetworkAPI-3.3.3",
+        "MaxWasUnavailable-LethalModDataLib-1.2.2",
+        "NotAtomicBomb-TerminalApi-1.5.6",
+        "Lordfirespeed-OdinSerializer-2024.2.2700"
+    ]
+}

@@ -5,15 +5,18 @@ using LethalUpgrades.Patches;
 using TerminalApi.Classes;
 using static TerminalApi.TerminalApi;
 using LethalModDataLib.Attributes;
-using Unity.Netcode;
-using System.Runtime.CompilerServices;
-using UnityEngine;
+using LethalNetworkAPI;
+using System.ComponentModel;
+using LethalNetworkAPI.Utils;
+
 
 
 namespace LethalUpgrades;
 [BepInPlugin(modGUID, modName, modVersion)]
 [BepInDependency("MaxWasUnavailable.LethalModDataLib")]
-// [BepInDependency("TerminalApi")]
+[BepInDependency("atomic.terminalapi")]
+[BepInDependency("LethalNetworkAPI")]
+// [BepInDependency("OdinSerializer")] // BepInEx/core
 
 #region LethalUpgradesBase Class
 public class LethalUpgradesBase : BaseUnityPlugin
@@ -30,7 +33,6 @@ public class LethalUpgradesBase : BaseUnityPlugin
     public static int tokens = 0;
     [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave)]
     public static int token_meter = 0;
-
     [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave)]
     public static bool health_t1 = false;
     [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave)]
@@ -39,7 +41,6 @@ public class LethalUpgradesBase : BaseUnityPlugin
     public static bool health_t3 = false;
     [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave)]
     public static bool health_leg = false;
-
     [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave)]
     public static bool stamina_t1 = false;
     [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave)]
@@ -48,7 +49,6 @@ public class LethalUpgradesBase : BaseUnityPlugin
     public static bool stamina_t3= false;
     [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave)]
     public static bool stamina_leg = false;
-
     [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave)]
     public static bool movement_t1 = false;
     [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave)]
@@ -58,21 +58,57 @@ public class LethalUpgradesBase : BaseUnityPlugin
     [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave)]
     public static bool movement_leg = false;
 
+    public static Terminal ActiveTerminal()
+    {
+        Terminal[] terminals = UnityEngine.Object.FindObjectsByType<Terminal>(UnityEngine.FindObjectsSortMode.None);
+        foreach(Terminal terminal in terminals)
+        {
+            if(terminal.terminalInUse)
+            {
+                mls.LogInfo("Found active terminal!");
+                return terminal;
+            }
+        }
+        mls.LogInfo("Did not find active terminal");
+        return null;
+    }
+    public static void SyncTerminals(int remainingCredits)
+    {
+        Terminal[] all_terminals = UnityEngine.Object.FindObjectsByType<Terminal>(UnityEngine.FindObjectsSortMode.None);
+        foreach(Terminal terminal in all_terminals)
+        {
+            mls.LogInfo($"Syncing credits for terminal {terminal.currentNode} which is active? -> {terminal.terminalInUse}");
+            if(LNetworkUtils.IsHostOrServer)
+            {
+                terminal.SyncGroupCreditsServerRpc(remainingCredits, terminal.numberOfItemsInDropship);
+            }
+            else if(!LNetworkUtils.IsHostOrServer)
+            {
+                LethalUpgradesNetwork.client_credits.Value = remainingCredits;
+            }
+        }
+    }
+
     void Awake()
     {
         if (Instance == null)
         {
             Instance = this;
         }
+
         mls = BepInEx.Logging.Logger.CreateLogSource(modGUID);
         mls.LogInfo("LethalUpgrades at your service!");
         // harmony.PatchAll(typeof(StartOfRoundPatch));
         harmony.PatchAll(typeof(HealthPatching));
         harmony.PatchAll(typeof(StaminaPatching));
         harmony.PatchAll(typeof(MovementPatching));
-        harmony.PatchAll(typeof(DebugPatching)); //Uncomment to have logs in BepInEx console
+        // harmony.PatchAll(typeof(DebugPatching)); //Uncomment to have logs in BepInEx console
         harmony.PatchAll(typeof(TokenPatching));
+        harmony.PatchAll(typeof(HostClientPatching));
         ConfigManager = new ConfigurationController(Config);
+
+        LethalUpgradesNetwork.Initiate();
+        LethalUpgradesNetwork.InitializeNetworkCallbacks();
 
         AddCommand("upgrade", new CommandInfo()
         {
@@ -136,8 +172,9 @@ public class LethalUpgradesBase : BaseUnityPlugin
         {
             DisplayTextSupplier = () =>
             {
-                var terminal = UnityEngine.Object.FindFirstObjectByType<Terminal>();
-                terminal.groupCredits += 500;
+                var terminal = ActiveTerminal();
+                var new_credits = terminal.groupCredits += 500;
+                SyncTerminals(new_credits);
                 return "Gave you 500 moneys for testing.\n";
             }, Category = "Other"
         });
@@ -163,15 +200,17 @@ public class LethalUpgradesBase : BaseUnityPlugin
                 }
 
                 var cost = 200;
-                var terminal = UnityEngine.Object.FindFirstObjectByType<Terminal>();
-                var groupCredits = terminal.groupCredits;
-
-                if (groupCredits < cost)
+                var terminal = ActiveTerminal();
+                if (terminal.groupCredits < cost)
                 {
                     return $"Not enough credits for this upgrade. You need ${cost}\n";
                 }
-                terminal.groupCredits = groupCredits - cost;
+                var remainingCredits = terminal.groupCredits - cost;
+                SyncTerminals(remainingCredits: remainingCredits);
+
+                LethalUpgradesNetwork.health_t1.Value = true;
                 health_t1 = true;
+
                 return $"Upgrade acquired. New balance of ${terminal.groupCredits}\n";
             }, Category = "Other"
         });
@@ -180,26 +219,27 @@ public class LethalUpgradesBase : BaseUnityPlugin
         {
             DisplayTextSupplier = () =>
             {
+                if (!health_t1)
+                {
+                    return "You require the tier 1 health upgrade before this!\n";
+                }
                 if(health_t2)
                 {
                     return "You already have this upgrade!\n";
                 }
 
                 var cost = 300;
-                var terminal = UnityEngine.Object.FindFirstObjectByType<Terminal>();
-                var groupCredits = terminal.groupCredits;
-
-                if (!health_t1)
-                {
-                    return "You require the tier 1 health upgrade before this!\n";
-                }
-
-                if (groupCredits < cost)
+                var terminal = ActiveTerminal();
+                if(terminal.groupCredits < cost)
                 {
                     return $"Not enough credits for this upgrade. You need ${cost}\n";
                 }
-                terminal.groupCredits = groupCredits - cost;
+                var remainingCredits = terminal.groupCredits - cost;
+                SyncTerminals(remainingCredits: remainingCredits);
+
+                LethalUpgradesNetwork.health_t2.Value = true;
                 health_t2 = true;
+
                 return $"Upgrade acquired. New balance of ${terminal.groupCredits}\n";
             }, Category = "Other"
         });
@@ -208,30 +248,27 @@ public class LethalUpgradesBase : BaseUnityPlugin
         {
             DisplayTextSupplier = () =>
             {
+                if (!health_t2)
+                {
+                    return "You require the tier 2 health upgrade before this!\n";
+                }
                 if(health_t3)
                 {
-                    return "You already have this upgrade!\n";  
+                    return "You already have this upgrade!\n";
                 }
 
                 var cost = 400;
-                var terminal = UnityEngine.Object.FindFirstObjectByType<Terminal>();
-                var groupCredits = terminal.groupCredits;
-
-                if (!health_t1)
-                {
-                    return $"Come on man you don't even have the tier 1...\n";
-                }
-                if (!health_t2)
-                {
-                    return $"You require the tier 2 health upgrade before this!\n";
-                }
-
-                if (groupCredits < cost)
+                var terminal = ActiveTerminal();
+                if(terminal.groupCredits < cost)
                 {
                     return $"Not enough credits for this upgrade. You need ${cost}\n";
                 }
-                terminal.groupCredits = groupCredits - cost;
+                var remainingCredits = terminal.groupCredits - cost;
+                SyncTerminals(remainingCredits: remainingCredits);
+
+                LethalUpgradesNetwork.health_t3.Value = true;
                 health_t3 = true;
+
                 return $"Upgrade acquired. New balance of ${terminal.groupCredits}\n";
             }, Category = "Other"
         });
@@ -240,23 +277,26 @@ public class LethalUpgradesBase : BaseUnityPlugin
         #region Stamina Upgrades
         AddCommand("upgrade stamina 1", new CommandInfo()
         {
+            
             DisplayTextSupplier = () =>
             {
                 if(stamina_t1)
                 {
-                    return "You already have this upgrade!\n";  
+                    return "You already have this upgrade!\n";
                 }
 
                 var cost = 300;
-                var terminal = UnityEngine.Object.FindFirstObjectByType<Terminal>();
-                var groupCredits = terminal.groupCredits;
-
-                if (groupCredits < cost)
+                var terminal = ActiveTerminal();
+                if (terminal.groupCredits < cost)
                 {
                     return $"Not enough credits for this upgrade. You need ${cost}\n";
                 }
-                terminal.groupCredits = groupCredits - cost;
+                var remainingCredits = terminal.groupCredits - cost;
+                SyncTerminals(remainingCredits: remainingCredits);
+
+                LethalUpgradesNetwork.stamina_t1.Value = true;
                 stamina_t1 = true;
+
                 return $"Upgrade acquired. New balance of ${terminal.groupCredits}\n";
             }, Category = "Other"
         });
@@ -265,26 +305,27 @@ public class LethalUpgradesBase : BaseUnityPlugin
         {
             DisplayTextSupplier = () =>
             {
-                if(stamina_t2)
-                {
-                    return "You already have this upgrade!\n";  
-                }
-
-                var cost = 400;
-                var terminal = UnityEngine.Object.FindFirstObjectByType<Terminal>();
-                var groupCredits = terminal.groupCredits;
-
-                if(!stamina_t1)
+                if (!stamina_t1)
                 {
                     return "You require the tier 1 stamina upgrade before this!\n";
                 }
+                if(stamina_t2)
+                {
+                    return "You already have this upgrade!\n";
+                }
 
-                if (groupCredits < cost)
+                var cost = 400;
+                var terminal = ActiveTerminal();
+                if(terminal.groupCredits < cost)
                 {
                     return $"Not enough credits for this upgrade. You need ${cost}\n";
                 }
-                terminal.groupCredits = groupCredits - cost;
+                var remainingCredits = terminal.groupCredits - cost;
+                SyncTerminals(remainingCredits: remainingCredits);
+
+                LethalUpgradesNetwork.stamina_t2.Value = true;
                 stamina_t2 = true;
+
                 return $"Upgrade acquired. New balance of ${terminal.groupCredits}\n";
             }, Category = "Other"
         });
@@ -293,30 +334,27 @@ public class LethalUpgradesBase : BaseUnityPlugin
         {
             DisplayTextSupplier = () =>
             {
-                if(stamina_t3)
-                {
-                    return "You already have this upgrade!\n";  
-                }
-
-                var cost = 500;
-                var terminal = UnityEngine.Object.FindFirstObjectByType<Terminal>();
-                var groupCredits = terminal.groupCredits;
-
-                if(!stamina_t1)
-                {
-                    return $"Come on man you don't even have the tier 1...\n";
-                }
-                if(!stamina_t2)
+                if (!stamina_t2)
                 {
                     return "You require the tier 2 stamina upgrade before this!\n";
                 }
+                if(stamina_t3)
+                {
+                    return "You already have this upgrade!\n";
+                }
 
-                if (groupCredits < cost)
+                var cost = 500;
+                var terminal = ActiveTerminal();
+                if(terminal.groupCredits < cost)
                 {
                     return $"Not enough credits for this upgrade. You need ${cost}\n";
                 }
-                terminal.groupCredits = groupCredits - cost;
+                var remainingCredits = terminal.groupCredits - cost;
+                SyncTerminals(remainingCredits: remainingCredits);
+
+                LethalUpgradesNetwork.stamina_t3.Value = true;
                 stamina_t3 = true;
+
                 return $"Upgrade acquired. New balance of ${terminal.groupCredits}\n";
             }, Category = "Other"
         });
@@ -325,22 +363,24 @@ public class LethalUpgradesBase : BaseUnityPlugin
         #region Movement Upgrades
         AddCommand("upgrade movement 1", new CommandInfo()
         {
+            
             DisplayTextSupplier = () =>
             {
                 if(movement_t1)
                 {
-                    return "You already have this upgrade!\n";  
+                    return "You already have this upgrade!\n";
                 }
 
-                var cost = 200;
-                var terminal = UnityEngine.Object.FindFirstObjectByType<Terminal>();
-                var groupCredits = terminal.groupCredits;
-
-                if (groupCredits < cost)
+                var cost = 300;
+                var terminal = ActiveTerminal();
+                if (terminal.groupCredits < cost)
                 {
                     return $"Not enough credits for this upgrade. You need ${cost}\n";
                 }
-                terminal.groupCredits = groupCredits - cost;
+                var remainingCredits = terminal.groupCredits - cost;
+                SyncTerminals(remainingCredits: remainingCredits);
+
+                LethalUpgradesNetwork.movement_t1.Value = true;
                 movement_t1 = true;
 
                 return $"Upgrade acquired. New balance of ${terminal.groupCredits}\n";
@@ -351,25 +391,25 @@ public class LethalUpgradesBase : BaseUnityPlugin
         {
             DisplayTextSupplier = () =>
             {
+                if (!movement_t1)
+                {
+                    return "You require the tier 1 movement upgrade before this!\n";
+                }
                 if(movement_t2)
                 {
-                    return "You already have this upgrade!\n";  
+                    return "You already have this upgrade!\n";
                 }
 
-                var cost = 300;
-                var terminal = UnityEngine.Object.FindFirstObjectByType<Terminal>();
-                var groupCredits = terminal.groupCredits;
-
-                if(!movement_t1)
-                {
-                    return "You need the tier 1 upgrade!\n";
-                }
-
-                if (groupCredits < cost)
+                var cost = 400;
+                var terminal = ActiveTerminal();
+                if(terminal.groupCredits < cost)
                 {
                     return $"Not enough credits for this upgrade. You need ${cost}\n";
                 }
-                terminal.groupCredits = groupCredits - cost;
+                var remainingCredits = terminal.groupCredits - cost;
+                SyncTerminals(remainingCredits: remainingCredits);
+
+                LethalUpgradesNetwork.movement_t2.Value = true;
                 movement_t2 = true;
 
                 return $"Upgrade acquired. New balance of ${terminal.groupCredits}\n";
@@ -380,29 +420,25 @@ public class LethalUpgradesBase : BaseUnityPlugin
         {
             DisplayTextSupplier = () =>
             {
-                if(movement_t3)
-                {
-                    return "You already have this upgrade!\n";  
-                }
-
-                var cost = 350;
-                var terminal = UnityEngine.Object.FindFirstObjectByType<Terminal>();
-                var groupCredits = terminal.groupCredits;
-
-                if (!movement_t1)
-                {
-                    return "Come on man you don't even have the tier 1...\n";
-                }
                 if (!movement_t2)
                 {
                     return "You require the tier 2 movement upgrade before this!\n";
                 }
+                if(movement_t3)
+                {
+                    return "You already have this upgrade!\n";
+                }
 
-                if (groupCredits < cost)
+                var cost = 500;
+                var terminal = ActiveTerminal();
+                if(terminal.groupCredits < cost)
                 {
                     return $"Not enough credits for this upgrade. You need ${cost}\n";
                 }
-                terminal.groupCredits = groupCredits - cost;
+                var remainingCredits = terminal.groupCredits - cost;
+                SyncTerminals(remainingCredits: remainingCredits);
+
+                LethalUpgradesNetwork.movement_t3.Value = true;
                 movement_t3 = true;
 
                 return $"Upgrade acquired. New balance of ${terminal.groupCredits}\n";
@@ -416,33 +452,279 @@ public class LethalUpgradesBase : BaseUnityPlugin
 }
 #endregion
 
-
-
-#region LethalUpgradesNetwork Class
-public class LethalUpgradesNetwork : NetworkBehaviour
+#region Lethal Upgrades Network
+public class LethalUpgradesNetwork
 {
-    // TODO: Transfer variables here for network management and sync
-    public static LethalUpgradesNetwork Instance;
-    public NetworkVariable<bool> health_t1 = new NetworkVariable<bool>();
-    public NetworkVariable<bool> health_t2 = new NetworkVariable<bool>();
-    public NetworkVariable<bool> health_t3 = new NetworkVariable<bool>();
-    public NetworkVariable<bool> health_leg = new NetworkVariable<bool>();
-    public NetworkVariable<bool> stamina_t1 = new NetworkVariable<bool>();
-    public NetworkVariable<bool> stamina_t2 = new NetworkVariable<bool>();
-    public NetworkVariable<bool> stamina_t3 = new NetworkVariable<bool>();
-    public NetworkVariable<bool> stamina_leg = new NetworkVariable<bool>();
-    public NetworkVariable<bool> movement_t1 = new NetworkVariable<bool>();
-    public NetworkVariable<bool> movement_t2 = new NetworkVariable<bool>();
-    public NetworkVariable<bool> movement_t3 = new NetworkVariable<bool>();
-    public NetworkVariable<bool> movement_leg = new NetworkVariable<bool>();
-    public NetworkVariable<int> tokens = new NetworkVariable<int>();
-    
-    void Awake()
+    public static LNetworkEvent syncer;
+    // public static LNetworkEvent credit_syncer;
+    public static LNetworkVariable<bool> health_t1;
+    public static LNetworkVariable<bool> health_t2;
+    public static LNetworkVariable<bool> health_t3;
+    public static LNetworkVariable<bool> stamina_t1;
+    public static LNetworkVariable<bool> stamina_t2;
+    public static LNetworkVariable<bool> stamina_t3;
+    public static LNetworkVariable<bool> movement_t1;
+    public static LNetworkVariable<bool> movement_t2;
+    public static LNetworkVariable<bool> movement_t3;
+    public static LNetworkVariable<int> tokens;
+    public static LNetworkVariable<int> client_credits;
+    public static bool syncing = false;
+
+
+    public static void Initiate()
     {
-        if(Instance == null)
+        syncer = LNetworkEvent.Connect("ChuitosLethalUpgrades_syncer", onServerReceived: OnClientJoinedRequest);
+        // credit_syncer = LNetworkEvent.Connect("ChuitosLethalUpgrades_credit_syncer", onServerReceived: OnClientCreditSyncRequest);
+        health_t1 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_health_t1", false);
+        health_t2 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_health_t2", false);
+        health_t3 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_health_t3", false);
+        stamina_t1 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_stamina_t1", false);
+        stamina_t2 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_stamina_t2", false);
+        stamina_t3 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_stamina_t3", false);
+        movement_t1 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_movement_t1", false);
+        movement_t2 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_movement_t2", false);
+        movement_t3 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_movement_t3", false);
+        tokens = LNetworkVariable<int>.Connect("ChuitosLethalUpgrades_tokens", 0);
+        client_credits = LNetworkVariable<int>.Connect("ChuitosLethalUpgrades_client_credits", 0);
+    }
+
+    private static void OnClientJoinedRequest(ulong clientId)
+    {
+        LethalUpgradesBase.mls.LogInfo($"Client {clientId} requested sync, sending current upgrade states...");
+        
+        // If host health variables are true
+        if(LethalUpgradesBase.health_t1)
         {
-            Instance = this;
+            if(health_t1.Value != true)
+            {
+                health_t1.Value = true;
+            }
+            else
+            {
+                health_t1.Value = false;
+                health_t1.Value = true;
+            }
+        }
+
+        if(LethalUpgradesBase.health_t2)
+        {
+            if(health_t2.Value != true)
+            {
+                health_t2.Value = true;
+            }
+            else
+            {
+                health_t2.Value = false;
+                health_t2.Value = true;
+            }
+        }
+
+        if(LethalUpgradesBase.health_t3)
+        {
+            if(health_t3.Value != true)
+            {
+                health_t3.Value = true;
+            }
+            else
+            {
+                health_t3.Value = false;
+                health_t3.Value = true;
+            }
+        }
+
+        // If host stamina variables are true
+        if(LethalUpgradesBase.stamina_t1)
+        {
+            if(stamina_t1.Value != true)
+            {
+                stamina_t1.Value = true;
+            }
+            else
+            {
+                stamina_t1.Value = false;
+                stamina_t1.Value = true;
+            }
+        }
+
+        if(LethalUpgradesBase.stamina_t2)
+        {
+            if(stamina_t2.Value != true)
+            {
+                stamina_t2.Value = true;
+            }
+            else
+            {
+                stamina_t2.Value = false;
+                stamina_t2.Value = true;
+            }
+        }
+
+        if(LethalUpgradesBase.stamina_t3)
+        {
+            if(stamina_t3.Value != true)
+            {
+                stamina_t3.Value = true;
+            }
+            else
+            {
+                stamina_t3.Value = false;
+                stamina_t3.Value = true;
+            }
+        }
+
+        // If host movement variables are true
+        if(LethalUpgradesBase.movement_t1)
+        {
+            if(movement_t1.Value != true)
+            {
+                movement_t1.Value = true;
+            }
+            else
+            {
+                movement_t1.Value = false;
+                movement_t1.Value = true;
+            }
+        }
+
+        if(LethalUpgradesBase.movement_t2)
+        {
+            if(movement_t2.Value != true)
+            {
+                movement_t2.Value = true;
+            }
+            else
+            {
+                movement_t2.Value = false;
+                movement_t2.Value = true;
+            }
+        }
+
+        if(LethalUpgradesBase.movement_t3)
+        {
+            if(movement_t3.Value != true)
+            {
+                movement_t3.Value = true;
+            }
+            else
+            {
+                movement_t3.Value = false;
+                movement_t3.Value = true;
+            }
+        }
+
+        if(LethalUpgradesBase.tokens != 0)
+        {
+            if(tokens.Value != LethalUpgradesBase.tokens)
+            {
+                tokens.Value = LethalUpgradesBase.tokens;
+            }
+            else
+            {
+                tokens.Value = -1;
+                tokens.Value = LethalUpgradesBase.tokens;
+            }
+        }
+        LethalUpgradesBase.mls.LogInfo($"Sync sent for client {clientId} - Tokens: {LethalUpgradesBase.tokens}");
+    }
+
+    // public static void OnClientCreditSyncRequest(ulong clientId)
+    // {
+    //     client_credits.OnValueChanged += (oldValue, newValue) =>
+    //     {
+    //         LethalUpgradesBase.SyncTerminals(client_credits.Value);
+    //     };
+    // }
+
+    public static void InitializeNetworkCallbacks()
+    {
+        if(!syncing)
+        {
+            health_t1.OnValueChanged += (oldValue, newValue) =>
+            {
+                LethalUpgradesBase.health_t1 = newValue;
+                LethalUpgradesBase.mls.LogInfo($"health_t1 synced to: {newValue}");
+            };
+
+            health_t2.OnValueChanged += (oldValue, newValue) =>
+            {
+                LethalUpgradesBase.health_t2 = newValue;
+                LethalUpgradesBase.mls.LogInfo($"health_t2 synced to: {newValue}");
+            };
+
+            health_t3.OnValueChanged += (oldValue, newValue) =>
+            {
+                LethalUpgradesBase.health_t3 = newValue;
+                LethalUpgradesBase.mls.LogInfo($"health_t3 synced to: {newValue}");
+            };
+
+            stamina_t1.OnValueChanged += (oldValue, newValue) =>
+            {
+                LethalUpgradesBase.stamina_t1 = newValue;
+                LethalUpgradesBase.mls.LogInfo($"stamina_t1 synced to: {newValue}");
+            };
+
+            stamina_t2.OnValueChanged += (oldValue, newValue) =>
+            {
+                LethalUpgradesBase.stamina_t2 = newValue;
+                LethalUpgradesBase.mls.LogInfo($"stamina_t2 synced to: {newValue}");
+            };
+
+            stamina_t3.OnValueChanged += (oldValue, newValue) =>
+            {
+                LethalUpgradesBase.stamina_t3 = newValue;
+                LethalUpgradesBase.mls.LogInfo($"stamina_t3 synced to: {newValue}");
+            };
+
+            movement_t1.OnValueChanged += (oldValue, newValue) =>
+            {
+                LethalUpgradesBase.movement_t1 = newValue;
+                LethalUpgradesBase.mls.LogInfo($"movement_t1 synced to: {newValue}");
+            };
+
+            movement_t2.OnValueChanged += (oldValue, newValue) =>
+            {
+                LethalUpgradesBase.movement_t2 = newValue;
+                LethalUpgradesBase.mls.LogInfo($"movement_t2 synced to: {newValue}");
+            };
+
+            movement_t3.OnValueChanged += (oldValue, newValue) =>
+            {
+                LethalUpgradesBase.movement_t3 = newValue;
+                LethalUpgradesBase.mls.LogInfo($"movement_t3 synced to: {newValue}");
+            };
+
+            tokens.OnValueChanged += (oldValue, newValue) =>
+            {
+                LethalUpgradesBase.tokens = newValue;
+                LethalUpgradesBase.mls.LogInfo($"tokens synced to: {newValue}");
+            };
+
+            client_credits.OnValueChanged += async (oldValue, newValue) =>
+            {
+                LethalUpgradesBase.mls.LogInfo($"Original Client Credits: {oldValue}");
+                LethalUpgradesBase.mls.LogInfo($"New Client Credits: {newValue}");
+                if(LNetworkUtils.IsHostOrServer)
+                {
+                    // await Task.Delay(1500);
+                    LethalUpgradesBase.SyncTerminals(client_credits.Value);
+                }
+            };
         }
     }
 }
+#endregion
+
+#region MULTIPLAYER ISSUES
+/// ISSUE #1:
+/// IF EVERYONE IS CONNECTED AT THE SAME TIME, SYNC FINE
+/// IF UPGRADE IS BOUGHT AND SOMEONE JOINS LATER, ITS DESYNCED
+/// FIND A WAY TO FIX THIS. TRY AND ALWAYS MAKE NEW PEOPLE SYNC TO HOST WHEN THEY JOIN.
+/// HOST ALWAYS HAS UPDATED VALUES.
+/// 
+/// STATUS: FIXED
+/// ----------------------------------------------
+/// ISSUE #2:
+/// TERMINAL CREDITS CAN DESYNC WHEN ANY PLAYER BUYS UPGRADE
+/// 
+/// STATUS: FIXED
 #endregion

@@ -31,3 +31,5 @@ Legendaries (Acquired with tokens)
 - Stamina: When damaged, regardless of amount or source, gain full stamina back.
 - Movement: While critically injured, become invisible
 - Utilities: All equipment weighs 0 pounds.
+
+MULTIPLAYER STATUS: ✅

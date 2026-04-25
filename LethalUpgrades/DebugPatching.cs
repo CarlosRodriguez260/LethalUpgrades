@@ -6,6 +6,7 @@ using BepInEx;
 using BepInEx.Logging;
 using GameNetcodeStuff;
 using HarmonyLib;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace LethalUpgrades.Patches;
@@ -21,7 +22,7 @@ internal class DebugPatching
         {
             lastLogTime = Time.time;
             var player = GameNetworkManager.Instance?.localPlayerController;
-            var terminalNode = UnityEngine.Object.FindFirstObjectByType<Terminal>();
+            // var terminalNode = UnityEngine.Object.FindFirstObjectByType<Terminal>();
             if (player != null)
             {
                 LethalUpgradesBase.mls.LogInfo($"Sprint Time: {player.sprintTime:R}");
