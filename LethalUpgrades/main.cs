@@ -1,25 +1,26 @@
 ﻿using BepInEx;
 using BepInEx.Logging;
-using GameNetcodeStuff;
 using HarmonyLib;
 using LethalUpgrades.Patches;
-using TerminalApi;
 using TerminalApi.Classes;
 using static TerminalApi.TerminalApi;
-using UnityEngine;
 using LethalModDataLib.Attributes;
-using LethalModDataLib;
+using Unity.Netcode;
+using System.Runtime.CompilerServices;
+using UnityEngine;
 
 
 namespace LethalUpgrades;
 [BepInPlugin(modGUID, modName, modVersion)]
 [BepInDependency("MaxWasUnavailable.LethalModDataLib")]
+// [BepInDependency("TerminalApi")]
+
+#region LethalUpgradesBase Class
 public class LethalUpgradesBase : BaseUnityPlugin
 {
     private const string modGUID = "ChuitosLethalUpgrades";
     private const string modName = "Lethal Upgrades Mod";
     private const string modVersion = "0.1";
-
     private readonly Harmony harmony = new Harmony(modGUID);
     internal static LethalUpgradesBase Instance;
     internal static ManualLogSource mls;
@@ -73,22 +74,29 @@ public class LethalUpgradesBase : BaseUnityPlugin
         harmony.PatchAll(typeof(TokenPatching));
         ConfigManager = new ConfigurationController(Config);
 
-        #region Terminal Commands
-        AddCommand("upgrade",
-        "Thank you for joining the *LETHAL UPGRADES* program.\n" +
-        "In exchange for credits, we can provide upgrades that should boost your quota-reaching efficiency!.\n" +
-        "We currently provide the following types of [UPGRADES]:\n" +
-        "- Health\n" +
-        "- Stamina\n"+
-        "- Movement\n" +
-        "- Utilities\n\n" +
+        AddCommand("upgrade", new CommandInfo()
+        {
+            DisplayTextSupplier = () =>
+            {
+                var text = "Thank you for joining the *LETHAL UPGRADES* program.\n" +
+                            "In exchange for credits, we can provide upgrades that should boost your quota-reaching efficiency!.\n" +
+                            "We currently provide the following types of [UPGRADES]:\n" +
+                            "- HEALTH\n" +
+                            "- STAMINA\n"+
+                            "- MOVEMENT\n" +
+                            "- UTILITIES\n\n" +
 
-        "Each category has 3 tiers with differing costs, providing a plethora of different changes.\n" +
-        "A special token can be acquired by proving your loot-gathering and survival skills, which can be turned in for free legendary upgrades!\n\n" +
-        
-        "To see information about each upgrade, type 'upgrade [UPGRADE] info'\n" +
-        "To buy an upgrade, type 'upgrade [UPGRADE] [TIER]'\n" +
-        "To learn how to get tokens, type 'upgrade token'\n");
+                            "Each category has 3 tiers with differing costs, providing a plethora of different changes.\n" +
+                            "A special token can be acquired by proving your loot-gathering and survival skills, which can be turned in for free legendary upgrades!\n\n" +
+                            
+                            "NOTE: Upgrades that cost money scale with amount of players present.\n" +
+                            "To see information about each upgrade, type 'upgrade [UPGRADE] info'\n" +
+                            "To buy an upgrade, type 'upgrade [UPGRADE] [TIER]'\n" +
+                            "To learn how to get tokens, type 'upgrade token'\n" +
+                            "To buy a legendary upgrade with a token, type 'upgrade token [UPGRADE]\n";
+                return text;
+            }, Category = "Other"
+        });    
 
         AddCommand("upgrade token",
         "Special tokens, denoted by Ŧ, are utilized to obtain legendary upgrades from each tier. " +
@@ -112,8 +120,8 @@ public class LethalUpgradesBase : BaseUnityPlugin
 
         AddCommand("upgrade movement info",
         "These upgrades affect your movement. They consist of the following:\n" +
-        "- Tier 1: Sprint 6% faster. Cost: $150\n" + //Done
-        "- Tier 2: Walk/Crouch 12% faster. Cost: $275\n" + //Done
+        "- Tier 1: Sprint 6% faster. Cost: $200\n" + //Done
+        "- Tier 2: Walk/Crouch 12% faster. Cost: $300\n" + //Done
         "- Tier 3: Jump height increased by 25%. Cost: $350\n" + //Done
         "- Legendary: While critically injured, become invisible.\n");
 
@@ -134,19 +142,19 @@ public class LethalUpgradesBase : BaseUnityPlugin
             }, Category = "Other"
         });
 
-        AddCommand("give meter", new CommandInfo()
-        {
-            DisplayTextSupplier = () =>
-            {
-                token_meter += 50;
-                return "Filled up half your token meter.\n";
-            }, Category = "Other"
-        });
-        #endregion
+        // AddCommand("give meter", new CommandInfo()
+        // {
+        //     DisplayTextSupplier = () =>
+        //     {
+        //         token_meter += 50;
+        //         return "Filled up half your token meter.\n";
+        //     }, Category = "Other"
+        // });
 
         #region Health Upgrades
         AddCommand("upgrade health 1", new CommandInfo()
         {
+            
             DisplayTextSupplier = () =>
             {
                 if(health_t1)
@@ -324,7 +332,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
                     return "You already have this upgrade!\n";  
                 }
 
-                var cost = 150;
+                var cost = 200;
                 var terminal = UnityEngine.Object.FindFirstObjectByType<Terminal>();
                 var groupCredits = terminal.groupCredits;
 
@@ -348,7 +356,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
                     return "You already have this upgrade!\n";  
                 }
 
-                var cost = 275;
+                var cost = 300;
                 var terminal = UnityEngine.Object.FindFirstObjectByType<Terminal>();
                 var groupCredits = terminal.groupCredits;
 
@@ -406,3 +414,35 @@ public class LethalUpgradesBase : BaseUnityPlugin
         #endregion
     }
 }
+#endregion
+
+
+
+#region LethalUpgradesNetwork Class
+public class LethalUpgradesNetwork : NetworkBehaviour
+{
+    // TODO: Transfer variables here for network management and sync
+    public static LethalUpgradesNetwork Instance;
+    public NetworkVariable<bool> health_t1 = new NetworkVariable<bool>();
+    public NetworkVariable<bool> health_t2 = new NetworkVariable<bool>();
+    public NetworkVariable<bool> health_t3 = new NetworkVariable<bool>();
+    public NetworkVariable<bool> health_leg = new NetworkVariable<bool>();
+    public NetworkVariable<bool> stamina_t1 = new NetworkVariable<bool>();
+    public NetworkVariable<bool> stamina_t2 = new NetworkVariable<bool>();
+    public NetworkVariable<bool> stamina_t3 = new NetworkVariable<bool>();
+    public NetworkVariable<bool> stamina_leg = new NetworkVariable<bool>();
+    public NetworkVariable<bool> movement_t1 = new NetworkVariable<bool>();
+    public NetworkVariable<bool> movement_t2 = new NetworkVariable<bool>();
+    public NetworkVariable<bool> movement_t3 = new NetworkVariable<bool>();
+    public NetworkVariable<bool> movement_leg = new NetworkVariable<bool>();
+    public NetworkVariable<int> tokens = new NetworkVariable<int>();
+    
+    void Awake()
+    {
+        if(Instance == null)
+        {
+            Instance = this;
+        }
+    }
+}
+#endregion
