@@ -2,6 +2,7 @@
   <img src="./LethalUpgradesLogo.png" alt="Lethal Upgrades Mod Logo" width="400">
 </div>
 
+Thunderstore Page: https://thunderstore.io/c/lethal-company/p/LethalUpgrades/LethalUpgrades/
 # Join the new Lethal Upgrades Program!
 
 We heard some employees could not complete their quotas, complaining and exclaiming
