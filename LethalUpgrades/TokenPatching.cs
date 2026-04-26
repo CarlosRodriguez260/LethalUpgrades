@@ -25,13 +25,13 @@ internal class TokenPatching
                 LethalUpgradesBase.token_meter += 50;
                 break;
             case "A":
-                LethalUpgradesBase.token_meter += 30;
+                LethalUpgradesBase.token_meter += 35; 
                 break;
             case "B":
-                LethalUpgradesBase.token_meter += 15;
+                LethalUpgradesBase.token_meter += 10; 
                 break;
             case "C":
-                LethalUpgradesBase.token_meter += 10;
+                LethalUpgradesBase.token_meter += 5;
                 break;
             case "F":
                 LethalUpgradesBase.token_meter -= 10;
@@ -41,7 +41,6 @@ internal class TokenPatching
 
         if(LethalUpgradesBase.token_meter >= 100)
         {
-            LethalUpgradesBase.tokens += 1;
             LethalUpgradesBase.token_meter = LethalUpgradesBase.token_meter-100;
             __instance.StartCoroutine(DelayedTipDisplay(__instance));
             LethalUpgradesBase.mls.LogInfo($"Token Meter: {LethalUpgradesBase.token_meter}/100");
@@ -52,7 +51,8 @@ internal class TokenPatching
 
     private static System.Collections.IEnumerator DelayedTipDisplay(HUDManager __instance)
     {
-        yield return new WaitForSeconds(20f);
+        yield return new WaitForSeconds(22f);
+        LethalUpgradesBase.tokens += 1;
         __instance.DisplayTip("Lethal Upgrades", "Your performance thus far was considered acceptable. An upgrade token has been transferred!.");
     }
 }

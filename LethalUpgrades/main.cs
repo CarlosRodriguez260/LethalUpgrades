@@ -120,7 +120,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
                             "- HEALTH\n" +
                             "- STAMINA\n"+
                             "- MOVEMENT\n" +
-                            "- UTILITIES\n\n" +
+                            "- UTILITY\n\n" +
 
                             "Each category has 3 tiers with differing costs, providing a plethora of different changes.\n" +
                             "A special token can be acquired by proving your loot-gathering and survival skills, which can be turned in for free legendary upgrades!\n\n" +
@@ -161,23 +161,23 @@ public class LethalUpgradesBase : BaseUnityPlugin
         "- Tier 3: Jump height increased by 25%. Cost: $350\n" + //Done
         "- Legendary: While critically injured, become invisible.\n");
 
-        AddCommand("upgrade utilities info",
+        AddCommand("upgrade utility info",
         "These upgrades affect your equipment or utilities. They consist of the following:\n" +
         "- Tier 1: Increase ALL battery capacities by 10%. Cost: $300\n" +
         "- Tier 2: Reduce cost of all store items by 10%. Cost: $450\n" +
         "- Tier 3: Flashlights items can pass through the inverse teleporter. Cost: $500\n" +
         "- Legendary: All equipment weighs 0 pounds.\n");
 
-        AddCommand("give money", new CommandInfo()
-        {
-            DisplayTextSupplier = () =>
-            {
-                var terminal = ActiveTerminal();
-                var new_credits = terminal.groupCredits += 500;
-                SyncTerminals(new_credits);
-                return "Gave you 500 moneys for testing.\n";
-            }, Category = "Other"
-        });
+        // AddCommand("give money hehe", new CommandInfo()
+        // {
+        //     DisplayTextSupplier = () =>
+        //     {
+        //         var terminal = ActiveTerminal();
+        //         var new_credits = terminal.groupCredits += 500;
+        //         SyncTerminals(new_credits);
+        //         return "Gave you 500 moneys for testing.\n";
+        //     },
+        // });
 
         // AddCommand("give meter", new CommandInfo()
         // {
@@ -187,6 +187,24 @@ public class LethalUpgradesBase : BaseUnityPlugin
         //         return "Filled up half your token meter.\n";
         //     }, Category = "Other"
         // });
+
+        AddCommand("upgrade token stamina", new CommandInfo()
+        {
+            DisplayTextSupplier = () =>
+            {
+                if(tokens <= 0)
+                {
+                    return "You need a token to buy the legendary stamina upgrade.";
+                }
+
+                tokens -= 1;
+                LethalUpgradesNetwork.tokens.Value = tokens;
+                stamina_leg = true;
+                LethalUpgradesNetwork.stamina_leg.Value = true;
+
+                return "Acquired legendary stamina upgrade!";                
+            }, Category = "Other"
+        });
 
         #region Health Upgrades
         AddCommand("upgrade health 1", new CommandInfo()
@@ -211,7 +229,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
                 LethalUpgradesNetwork.health_t1.Value = true;
                 health_t1 = true;
 
-                return $"Upgrade acquired. New balance of ${terminal.groupCredits}\n";
+                return $"Upgrade acquired. New balance of ${remainingCredits}\n";
             }, Category = "Other"
         });
 
@@ -240,7 +258,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
                 LethalUpgradesNetwork.health_t2.Value = true;
                 health_t2 = true;
 
-                return $"Upgrade acquired. New balance of ${terminal.groupCredits}\n";
+                return $"Upgrade acquired. New balance of ${remainingCredits}\n";
             }, Category = "Other"
         });
 
@@ -269,7 +287,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
                 LethalUpgradesNetwork.health_t3.Value = true;
                 health_t3 = true;
 
-                return $"Upgrade acquired. New balance of ${terminal.groupCredits}\n";
+                return $"Upgrade acquired. New balance of ${remainingCredits}\n";
             }, Category = "Other"
         });
         #endregion
@@ -297,7 +315,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
                 LethalUpgradesNetwork.stamina_t1.Value = true;
                 stamina_t1 = true;
 
-                return $"Upgrade acquired. New balance of ${terminal.groupCredits}\n";
+                return $"Upgrade acquired. New balance of ${remainingCredits}\n";
             }, Category = "Other"
         });
 
@@ -326,7 +344,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
                 LethalUpgradesNetwork.stamina_t2.Value = true;
                 stamina_t2 = true;
 
-                return $"Upgrade acquired. New balance of ${terminal.groupCredits}\n";
+                return $"Upgrade acquired. New balance of ${remainingCredits}\n";
             }, Category = "Other"
         });
 
@@ -355,7 +373,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
                 LethalUpgradesNetwork.stamina_t3.Value = true;
                 stamina_t3 = true;
 
-                return $"Upgrade acquired. New balance of ${terminal.groupCredits}\n";
+                return $"Upgrade acquired. New balance of ${remainingCredits}\n";
             }, Category = "Other"
         });
         #endregion
@@ -383,7 +401,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
                 LethalUpgradesNetwork.movement_t1.Value = true;
                 movement_t1 = true;
 
-                return $"Upgrade acquired. New balance of ${terminal.groupCredits}\n";
+                return $"Upgrade acquired. New balance of ${remainingCredits}\n";
             }, Category = "Other"
         });
 
@@ -412,7 +430,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
                 LethalUpgradesNetwork.movement_t2.Value = true;
                 movement_t2 = true;
 
-                return $"Upgrade acquired. New balance of ${terminal.groupCredits}\n";
+                return $"Upgrade acquired. New balance of ${remainingCredits}\n";
             }, Category = "Other"
         });
 
@@ -441,7 +459,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
                 LethalUpgradesNetwork.movement_t3.Value = true;
                 movement_t3 = true;
 
-                return $"Upgrade acquired. New balance of ${terminal.groupCredits}\n";
+                return $"Upgrade acquired. New balance of ${remainingCredits}\n";
             }, Category = "Other"
         });
         #endregion
@@ -463,6 +481,7 @@ public class LethalUpgradesNetwork
     public static LNetworkVariable<bool> stamina_t1;
     public static LNetworkVariable<bool> stamina_t2;
     public static LNetworkVariable<bool> stamina_t3;
+    public static LNetworkVariable<bool> stamina_leg;
     public static LNetworkVariable<bool> movement_t1;
     public static LNetworkVariable<bool> movement_t2;
     public static LNetworkVariable<bool> movement_t3;
@@ -481,6 +500,7 @@ public class LethalUpgradesNetwork
         stamina_t1 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_stamina_t1", false);
         stamina_t2 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_stamina_t2", false);
         stamina_t3 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_stamina_t3", false);
+        stamina_leg = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_stamina_leg", false);
         movement_t1 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_movement_t1", false);
         movement_t2 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_movement_t2", false);
         movement_t3 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_movement_t3", false);
@@ -569,6 +589,19 @@ public class LethalUpgradesNetwork
             {
                 stamina_t3.Value = false;
                 stamina_t3.Value = true;
+            }
+        }
+
+        if(LethalUpgradesBase.stamina_leg)
+        {
+            if(stamina_leg.Value != true)
+            {
+                stamina_leg.Value = true;
+            }
+            else
+            {
+                stamina_leg.Value = false;
+                stamina_leg.Value = true;
             }
         }
 
@@ -675,6 +708,12 @@ public class LethalUpgradesNetwork
                 LethalUpgradesBase.mls.LogInfo($"stamina_t3 synced to: {newValue}");
             };
 
+            stamina_leg.OnValueChanged += (oldValue, newValue) =>
+            {
+                LethalUpgradesBase.stamina_leg = newValue;
+                LethalUpgradesBase.mls.LogInfo($"stamina_leg synced to: {newValue}");
+            };
+
             movement_t1.OnValueChanged += (oldValue, newValue) =>
             {
                 LethalUpgradesBase.movement_t1 = newValue;
@@ -705,7 +744,7 @@ public class LethalUpgradesNetwork
                 LethalUpgradesBase.mls.LogInfo($"New Client Credits: {newValue}");
                 if(LNetworkUtils.IsHostOrServer)
                 {
-                    // await Task.Delay(1500);
+                    await Task.Delay(1500);
                     LethalUpgradesBase.SyncTerminals(client_credits.Value);
                 }
             };

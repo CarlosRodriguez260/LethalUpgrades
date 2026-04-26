@@ -115,5 +115,20 @@ internal class StaminaPatching
         
     //     LethalUpgradesBase.mls.LogInfo($"[Frame {frameCounter}] Final weight: {__instance.carryWeight:F4}, active={active}");
     // }
-    #endregion 
+    #endregion
+
+    #region Stamina Legendary
+    [HarmonyPatch(typeof(PlayerControllerB), "DamagePlayer")]
+    [HarmonyPostfix]
+    static void HealthLeg(PlayerControllerB __instance)
+    {
+        if (__instance == null) return;
+        if (__instance != GameNetworkManager.Instance?.localPlayerController) return;
+
+        if(LethalUpgradesBase.stamina_leg)
+        {
+            __instance.sprintMeter = 1f;
+        }
+    }
+    #endregion
 }
