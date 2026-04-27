@@ -23,20 +23,24 @@ Health - Take a few more thumper hits!
 Stamina - More items carried, more **[FEEDING IT]**
 - Tier 1: Decrease running stamina usage. 
 - Tier 2: Improve stamina regen by 10%. 
-- Tier 3: Reduced stamina penalties when heavy (>=50 lbs). 
+- Tier 3: Greatly reduced stamina penalties when heavy (>=50 lbs). 
 - Legendary: When damaged, regardless of amount or source, gain full stamina back. 
 
 Movement - Run away from that vile giant.
 - Tier 1: Sprint 6% faster.
-- Tier 2: Walk/Crouch 12% faster.
+- Tier 2: Walk/Crouch 10% faster.
 - Tier 3: Increased jump height by 25%. 
+
+Utility - They might be useful.
+- Tier 1: Increase flashlight battery capacities by 10%.
+- Tier 2: Shovels deal double damage. Explodes on hit as visual effect. 
+    + By default, explosion does no damage. Only shovel deals damage.
+    + To turn explosion visual on or off, type `shovel explosion`.
 
 ## To-be Offered
 
-Utility - You don't need these really.
-- Tier 1: Increase all battery capacities by 10%.
-- Tier 2: Reduce cost of all store items by 10%. 
-- Tier 3: Flashlight items can pass through the inverse teleporter.
+Utility - They might be useful.
+- Tier 3: Obtain a second free cruiser replacement.
 
 Legendaries 
 - Movement: While critically injured, become invisible.
@@ -85,8 +89,8 @@ Cost Table for Upgrades
 |----------|--------|--------|--------|-----------|
 | Health   | $200    | $300    | $400    | 1 token   |
 | Stamina  | $300    | $400    | $500    | 1 token   |
-| Movement | $200    | $300    | $350    | 1 token   |
-| Utility  | $300    | $450    | $500    | 1 token   |
+| Movement | $250    | $350    | $400    | 1 token   |
+| Utility  | $250    | $350    | $400    | 1 token   |
 
 Extra Commands
 | Command                 | Description                                   |
@@ -97,6 +101,7 @@ Extra Commands
 | `upgrade stamina info`  | Summarizes stamina upgrades and their costs.  |
 | `upgrade movement info` | Summarizes movement upgrades and their costs. |
 | `upgrade utility info`  | Summarizes utility upgrades and their costs.  |
+| `shovel explosion`  | Turns off or on shovel explosion effect. Client-sided.  |
 
 ## Multiplayer Status
 
