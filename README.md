@@ -1,3 +1,5 @@
+Thunderstore Link: https://thunderstore.io/c/lethal-company/p/LethalUpgrades/LethalUpgrades/ 
+
 # Join the new Lethal Upgrades Program!
 
 We heard some employees could not complete their quotas, complaining and exclaiming
