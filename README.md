@@ -1,8 +1,3 @@
-<div>
-  <img src="./LethalUpgradesLogo.png" alt="Lethal Upgrades Mod Logo" width="400">
-</div>
-
-Thunderstore Page: https://thunderstore.io/c/lethal-company/p/LethalUpgrades/LethalUpgrades/
 # Join the new Lethal Upgrades Program!
 
 We heard some employees could not complete their quotas, complaining and exclaiming
@@ -21,6 +16,9 @@ Health - Take a few more thumper hits!
 - Tier 1: Gain +20 additional health.
 - Tier 2: Reduce all incoming damage by 5%. 
 - Tier 3: Gain +30 additional health. 
+- Legendary: Gain an adaptive regeneration ability.
+    + If you are below 50% health, gain +0.5 hp/s regen until back up to 50%.
+    + If you are below 100% but above 50% health and have not taken damage again 20 seconds after the first time, gain a passive + 2 hp/s buff until back up to 100%. Can be stopped if taking damage again.
 
 Stamina - More items carried, more **[FEEDING IT]**
 - Tier 1: Decrease running stamina usage. 
@@ -41,9 +39,6 @@ Utility - You don't need these really.
 - Tier 3: Flashlight items can pass through the inverse teleporter.
 
 Legendaries 
-- Health: Gain an adaptive regeneration abality.
-    + If you are below 50% health, gain +0.5 hp/s regen until back up to 50%.
-    + If you are below 100% but above 50% health and have not taken damage again 20 seconds after the first time, gain a passive + 2 hp/s buff until back up to 100%. Can be stopped if taking damage again.
 - Movement: While critically injured, become invisible.
 - Utilities: All equipment weighs 0 pounds. 
 

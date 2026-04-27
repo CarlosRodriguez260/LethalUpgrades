@@ -1,5 +1,12 @@
 # Releases
 
+## Version Release 1.2.0
+
+- Added tier 1 and 2 utility upgrades.
+    + Need to test tier 1 utility upgrade more.
+- Added legendary health upgrade.
+
+
 ## Version Release 1.1.6
 
 - Small README fix.
@@ -13,7 +20,7 @@
 ## Version Release 1.1.0
 
 - Added legendary stamina upgrade.
-- Needs testing.
+    + Needs testing.
 
 ## Version Release 1.0.8
 

@@ -8,6 +8,7 @@ using LethalModDataLib.Attributes;
 using LethalNetworkAPI;
 using System.ComponentModel;
 using LethalNetworkAPI.Utils;
+using System.Numerics;
 
 
 
@@ -57,6 +58,15 @@ public class LethalUpgradesBase : BaseUnityPlugin
     public static bool movement_t3 = false;
     [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave)]
     public static bool movement_leg = false;
+    public static bool utility_t1 = false;
+    [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave)]
+    public static bool utility_t2 = false;
+    [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave)]
+    public static bool utility_t3 = false;
+    [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave)]
+    public static bool utility_leg = false;
+    [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave)]
+    public static bool show_explosion = false;
 
     public static Terminal ActiveTerminal()
     {
@@ -98,13 +108,13 @@ public class LethalUpgradesBase : BaseUnityPlugin
 
         mls = BepInEx.Logging.Logger.CreateLogSource(modGUID);
         mls.LogInfo("LethalUpgrades at your service!");
-        // harmony.PatchAll(typeof(StartOfRoundPatch));
         harmony.PatchAll(typeof(HealthPatching));
         harmony.PatchAll(typeof(StaminaPatching));
         harmony.PatchAll(typeof(MovementPatching));
         // harmony.PatchAll(typeof(DebugPatching)); //Uncomment to have logs in BepInEx console
         harmony.PatchAll(typeof(TokenPatching));
         harmony.PatchAll(typeof(HostClientPatching));
+        harmony.PatchAll(typeof(UtilityPatching));
         ConfigManager = new ConfigurationController(Config);
 
         LethalUpgradesNetwork.Initiate();
@@ -125,11 +135,11 @@ public class LethalUpgradesBase : BaseUnityPlugin
                             "Each category has 3 tiers with differing costs, providing a plethora of different changes.\n" +
                             "A special token can be acquired by proving your loot-gathering and survival skills, which can be turned in for free legendary upgrades!\n\n" +
                             
-                            "NOTE: Upgrades that cost money scale with amount of players present.\n" +
-                            "To see information about each upgrade, type 'upgrade [UPGRADE] info'\n" +
-                            "To buy an upgrade, type 'upgrade [UPGRADE] [TIER]'\n" +
-                            "To learn how to get tokens, type 'upgrade token'\n" +
-                            "To buy a legendary upgrade with a token, type 'upgrade token [UPGRADE]\n";
+                            "NOTE: Upgrades that cost money scale with amount of players present.\n\n" +
+                            "To see information about each upgrade, type 'upgrade [UPGRADE] info'\n\n" +
+                            "To buy an upgrade, type 'upgrade [UPGRADE] [TIER]'\n\n" +
+                            "To learn how to get tokens, type 'upgrade token'\n\n" +
+                            "To buy a legendary upgrade with a token, type 'upgrade token [UPGRADE]\n\n";
                 return text;
             }, Category = "Other"
         });    
@@ -156,16 +166,18 @@ public class LethalUpgradesBase : BaseUnityPlugin
 
         AddCommand("upgrade movement info",
         "These upgrades affect your movement. They consist of the following:\n" +
-        "- Tier 1: Sprint 6% faster. Cost: $200\n" + //Done
-        "- Tier 2: Walk/Crouch 12% faster. Cost: $300\n" + //Done
-        "- Tier 3: Jump height increased by 25%. Cost: $350\n" + //Done
+        "- Tier 1: Sprint 6% faster. Cost: $250\n" + //Done
+        "- Tier 2: Walk/Crouch 10% faster. Cost: $350\n" + //Done
+        "- Tier 3: Jump height increased by 25%. Cost: $400\n" + //Done
         "- Legendary: While critically injured, become invisible.\n");
 
         AddCommand("upgrade utility info",
         "These upgrades affect your equipment or utilities. They consist of the following:\n" +
-        "- Tier 1: Increase ALL battery capacities by 10%. Cost: $300\n" +
-        "- Tier 2: Reduce cost of all store items by 10%. Cost: $450\n" +
-        "- Tier 3: Flashlights items can pass through the inverse teleporter. Cost: $500\n" +
+        "- Tier 1: Increase flashlight battery capacities by 10%. Cost: $250\n" +
+        "- Tier 2: Shovel deals double damage. Explodes on hit as visual effect. Cost: $350\n" +
+        "   By default, explosion does no damage. Only shovel deals damage.\n" +
+        "   To turn explosion visual on or off, type 'shovel explosion' in the terminal.\n" +
+        "- Tier 3: Flashlights items can pass through the inverse teleporter. Cost: $400\n" +
         "- Legendary: All equipment weighs 0 pounds.\n");
 
         // AddCommand("give money hehe", new CommandInfo()
@@ -188,6 +200,34 @@ public class LethalUpgradesBase : BaseUnityPlugin
         //     }, Category = "Other"
         // });
 
+        AddCommand("shovel explosion", new CommandInfo()
+        {
+            DisplayTextSupplier = () =>
+            {
+                show_explosion = !show_explosion;
+
+                return $"Shovel Explosion set to: {show_explosion}.\n";                
+            }, Category = "Other"
+        });
+
+        AddCommand("upgrade token health", new CommandInfo()
+        {
+            DisplayTextSupplier = () =>
+            {
+                if(tokens <= 0)
+                {
+                    return "You need a token to buy the legendary health upgrade.";
+                }
+
+                tokens -= 1;
+                LethalUpgradesNetwork.tokens.Value = tokens;
+                LethalUpgradesNetwork.health_leg.Value = true;
+                health_leg = true;
+
+                return "Acquired legendary health upgrade!\n";                
+            }, Category = "Other"
+        });
+
         AddCommand("upgrade token stamina", new CommandInfo()
         {
             DisplayTextSupplier = () =>
@@ -199,10 +239,10 @@ public class LethalUpgradesBase : BaseUnityPlugin
 
                 tokens -= 1;
                 LethalUpgradesNetwork.tokens.Value = tokens;
-                stamina_leg = true;
                 LethalUpgradesNetwork.stamina_leg.Value = true;
+                stamina_leg = true;
 
-                return "Acquired legendary stamina upgrade!";                
+                return "Acquired legendary stamina upgrade!\n";                
             }, Category = "Other"
         });
 
@@ -389,7 +429,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
                     return "You already have this upgrade!\n";
                 }
 
-                var cost = 300;
+                var cost = 250;
                 var terminal = ActiveTerminal();
                 if (terminal.groupCredits < cost)
                 {
@@ -418,7 +458,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
                     return "You already have this upgrade!\n";
                 }
 
-                var cost = 400;
+                var cost = 350;
                 var terminal = ActiveTerminal();
                 if(terminal.groupCredits < cost)
                 {
@@ -447,7 +487,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
                     return "You already have this upgrade!\n";
                 }
 
-                var cost = 500;
+                var cost = 400;
                 var terminal = ActiveTerminal();
                 if(terminal.groupCredits < cost)
                 {
@@ -465,6 +505,60 @@ public class LethalUpgradesBase : BaseUnityPlugin
         #endregion
 
         #region Utility Upgrades
+        AddCommand("upgrade utility 1", new CommandInfo()
+        {
+            
+            DisplayTextSupplier = () =>
+            {
+                if(utility_t1)
+                {
+                    return "You already have this upgrade!\n";
+                }
+
+                var cost = 250;
+                var terminal = ActiveTerminal();
+                if (terminal.groupCredits < cost)
+                {
+                    return $"Not enough credits for this upgrade. You need ${cost}\n";
+                }
+                var remainingCredits = terminal.groupCredits - cost;
+                SyncTerminals(remainingCredits: remainingCredits);
+
+                LethalUpgradesNetwork.utility_t1.Value = true;
+                utility_t1 = true;
+
+                return $"Upgrade acquired. New balance of ${67}\n";
+            }, Category = "Other"
+        });
+
+        AddCommand("upgrade utility 2", new CommandInfo()
+        {
+            DisplayTextSupplier = () =>
+            {
+                if (!utility_t1)
+                {
+                    return "You require the tier 1 utility upgrade before this!\n";
+                }
+                if(utility_t2)
+                {
+                    return "You already have this upgrade!\n";
+                }
+
+                var cost = 350;
+                var terminal = ActiveTerminal();
+                if(terminal.groupCredits < cost)
+                {
+                    return $"Not enough credits for this upgrade. You need ${cost}\n";
+                }
+                var remainingCredits = terminal.groupCredits - cost;
+                SyncTerminals(remainingCredits: remainingCredits);
+
+                LethalUpgradesNetwork.utility_t2.Value = true;
+                utility_t2 = true;
+
+                return $"Upgrade acquired. New balance of ${6}\n";
+            }, Category = "Other"
+        });
         #endregion
     }
 }
@@ -478,6 +572,7 @@ public class LethalUpgradesNetwork
     public static LNetworkVariable<bool> health_t1;
     public static LNetworkVariable<bool> health_t2;
     public static LNetworkVariable<bool> health_t3;
+    public static LNetworkVariable<bool> health_leg;
     public static LNetworkVariable<bool> stamina_t1;
     public static LNetworkVariable<bool> stamina_t2;
     public static LNetworkVariable<bool> stamina_t3;
@@ -485,18 +580,26 @@ public class LethalUpgradesNetwork
     public static LNetworkVariable<bool> movement_t1;
     public static LNetworkVariable<bool> movement_t2;
     public static LNetworkVariable<bool> movement_t3;
+    public static LNetworkVariable<bool> movement_leg;
+    public static LNetworkVariable<bool> utility_t1;
+    public static LNetworkVariable<bool> utility_t2;
+    public static LNetworkVariable<bool> utility_t3;
+    public static LNetworkVariable<bool> utility_leg;
     public static LNetworkVariable<int> tokens;
     public static LNetworkVariable<int> client_credits;
+    public static LNetworkVariable<UnityEngine.Vector3> shovel_explosion_pos;
     public static bool syncing = false;
+
 
 
     public static void Initiate()
     {
         syncer = LNetworkEvent.Connect("ChuitosLethalUpgrades_syncer", onServerReceived: OnClientJoinedRequest);
-        // credit_syncer = LNetworkEvent.Connect("ChuitosLethalUpgrades_credit_syncer", onServerReceived: OnClientCreditSyncRequest);
+        shovel_explosion_pos = LNetworkVariable<UnityEngine.Vector3>.Connect("ChuitosLethalUpgrades_shovel_explosion_pos", UnityEngine.Vector3.zero);
         health_t1 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_health_t1", false);
         health_t2 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_health_t2", false);
         health_t3 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_health_t3", false);
+        health_leg = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_health_leg", false);
         stamina_t1 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_stamina_t1", false);
         stamina_t2 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_stamina_t2", false);
         stamina_t3 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_stamina_t3", false);
@@ -504,6 +607,11 @@ public class LethalUpgradesNetwork
         movement_t1 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_movement_t1", false);
         movement_t2 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_movement_t2", false);
         movement_t3 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_movement_t3", false);
+        movement_leg = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_movement_leg", false);
+        utility_t1 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_utility_t1", false);
+        utility_t2 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_utility_t2", false);
+        utility_t3 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_utility_t3", false);
+        movement_leg = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_utility_leg", false);
         tokens = LNetworkVariable<int>.Connect("ChuitosLethalUpgrades_tokens", 0);
         client_credits = LNetworkVariable<int>.Connect("ChuitosLethalUpgrades_client_credits", 0);
     }
@@ -549,6 +657,19 @@ public class LethalUpgradesNetwork
             {
                 health_t3.Value = false;
                 health_t3.Value = true;
+            }
+        }
+
+        if(LethalUpgradesBase.health_leg)
+        {
+            if(health_leg.Value != true)
+            {
+                health_leg.Value = true;
+            }
+            else
+            {
+                health_leg.Value = false;
+                health_leg.Value = true;
             }
         }
 
@@ -645,6 +766,72 @@ public class LethalUpgradesNetwork
             }
         }
 
+        if(LethalUpgradesBase.movement_leg)
+        {
+            if(movement_leg.Value != true)
+            {
+                movement_leg.Value = true;
+            }
+            else
+            {
+                movement_leg.Value = false;
+                movement_leg.Value = true;
+            }
+        }
+
+        // If host utility variables are true
+        if(LethalUpgradesBase.utility_t1)
+        {
+            if(utility_t1.Value != true)
+            {
+                utility_t1.Value = true;
+            }
+            else
+            {
+                utility_t1.Value = false;
+                utility_t1.Value = true;
+            }
+        }
+
+        if(LethalUpgradesBase.utility_t2)
+        {
+            if(utility_t2.Value != true)
+            {
+                utility_t2.Value = true;
+            }
+            else
+            {
+                utility_t2.Value = false;
+                utility_t2.Value = true;
+            }
+        }
+
+        if(LethalUpgradesBase.utility_t3)
+        {
+            if(utility_t3.Value != true)
+            {
+                utility_t3.Value = true;
+            }
+            else
+            {
+                utility_t3.Value = false;
+                utility_t3.Value = true;
+            }
+        }
+
+        if(LethalUpgradesBase.utility_leg)
+        {
+            if(utility_leg.Value != true)
+            {
+                utility_leg.Value = true;
+            }
+            else
+            {
+                utility_leg.Value = false;
+                utility_leg.Value = true;
+            }
+        }
+
         if(LethalUpgradesBase.tokens != 0)
         {
             if(tokens.Value != LethalUpgradesBase.tokens)
@@ -659,14 +846,6 @@ public class LethalUpgradesNetwork
         }
         LethalUpgradesBase.mls.LogInfo($"Sync sent for client {clientId} - Tokens: {LethalUpgradesBase.tokens}");
     }
-
-    // public static void OnClientCreditSyncRequest(ulong clientId)
-    // {
-    //     client_credits.OnValueChanged += (oldValue, newValue) =>
-    //     {
-    //         LethalUpgradesBase.SyncTerminals(client_credits.Value);
-    //     };
-    // }
 
     public static void InitializeNetworkCallbacks()
     {
@@ -688,6 +867,12 @@ public class LethalUpgradesNetwork
             {
                 LethalUpgradesBase.health_t3 = newValue;
                 LethalUpgradesBase.mls.LogInfo($"health_t3 synced to: {newValue}");
+            };
+
+            health_leg.OnValueChanged += (oldValue, newValue) =>
+            {
+                LethalUpgradesBase.health_leg = newValue;
+                LethalUpgradesBase.mls.LogInfo($"health_leg synced to: {newValue}");
             };
 
             stamina_t1.OnValueChanged += (oldValue, newValue) =>
@@ -732,6 +917,30 @@ public class LethalUpgradesNetwork
                 LethalUpgradesBase.mls.LogInfo($"movement_t3 synced to: {newValue}");
             };
 
+            movement_leg.OnValueChanged += (oldValue, newValue) =>
+            {
+                LethalUpgradesBase.movement_leg = newValue;
+                LethalUpgradesBase.mls.LogInfo($"movement_leg synced to: {newValue}");
+            };
+
+            utility_t1.OnValueChanged += (oldValue, newValue) =>
+            {
+                LethalUpgradesBase.utility_t1 = newValue;
+                LethalUpgradesBase.mls.LogInfo($"utility_t1 synced to: {newValue}");
+            };
+
+            utility_t2.OnValueChanged += (oldValue, newValue) =>
+            {
+                LethalUpgradesBase.utility_t2 = newValue;
+                LethalUpgradesBase.mls.LogInfo($"utility_t2 synced to: {newValue}");
+            };
+
+            utility_t3.OnValueChanged += (oldValue, newValue) =>
+            {
+                LethalUpgradesBase.utility_t3 = newValue;
+                LethalUpgradesBase.mls.LogInfo($"utility_t3 synced to: {newValue}");
+            };
+
             tokens.OnValueChanged += (oldValue, newValue) =>
             {
                 LethalUpgradesBase.tokens = newValue;
@@ -747,6 +956,14 @@ public class LethalUpgradesNetwork
                     await Task.Delay(1500);
                     LethalUpgradesBase.SyncTerminals(client_credits.Value);
                 }
+            };
+            
+            shovel_explosion_pos.OnValueChanged += (oldValue, newValue) =>
+            {
+                LethalUpgradesBase.mls.LogInfo("Spawning explosion...");
+                Landmine.SpawnExplosion(newValue, LethalUpgradesBase.show_explosion, 0, 0, 0, 0);
+                // shovel_explosion_pos.Value = UnityEngine.Vector3.zero;
+                LethalUpgradesBase.mls.LogInfo("Explosion spawned!");
             };
         }
     }

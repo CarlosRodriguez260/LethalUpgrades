@@ -34,7 +34,7 @@ internal class MovementPatching
     #endregion 
 
     #region Movement Tier 2
-    internal static float movement_t2 = 4.6f * 1.12f;
+    internal static float movement_t2 = 4.6f * 1.10f;
     [HarmonyPatch(typeof(PlayerControllerB), "Update")]
     [HarmonyPostfix]
     static void MovementTier2(PlayerControllerB __instance)
