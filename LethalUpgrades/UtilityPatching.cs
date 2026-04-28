@@ -7,6 +7,7 @@ using TMPro;
 using Unity.Netcode;
 using UnityEngine;
 using Unity.Collections;
+using System.Net.WebSockets;
 
 namespace LethalUpgrades.Patches;
 internal class UtilityPatching
@@ -45,10 +46,11 @@ internal class UtilityPatching
     #endregion
 
     #region Utility Tier 2
-    [HarmonyPatch(typeof(Shovel), "HitShovel")]
+    [HarmonyPatch(typeof(Shovel), "reelUpShovel")]
     [HarmonyPrefix]
     static void UtilityTier2(Shovel __instance)
     {
+        
         if (LethalUpgradesBase.utility_t2)
         {
             var player = GameNetworkManager.Instance.localPlayerController;
@@ -62,9 +64,7 @@ internal class UtilityPatching
         }
     }
 
-    static int changer_low = -2;
-    static int changer = 0;
-    static int changer_high = 2;
+    static float changer = -0.9f;
     [HarmonyPatch(typeof(Shovel), "HitShovel")]
     [HarmonyPostfix]
     static void UtilityTier2Explosion(Shovel __instance)
@@ -74,18 +74,17 @@ internal class UtilityPatching
             var player = GameNetworkManager.Instance.localPlayerController;
             if(player.isHoldingObject && __instance.playerHeldBy==player)
             {
-                UnityEngine.Vector3 vector_changer = new UnityEngine.Vector3(0, 0, changer);
-
-                if(changer<changer_high)
+                LethalUpgradesBase.mls.LogInfo($"Changer value: {changer}");
+                UnityEngine.Vector3 vector_changer = new UnityEngine.Vector3(0, changer, 0);
+                if(changer == -0.9f)
                 {
-                    changer++;
+                    changer = -1f;
                 }
-                else if(changer==changer_high)
+                else if(changer == -1f)
                 {
-                    changer = changer_low;
+                    changer = -0.9f;
                 }
 
-                    
                 LethalUpgradesNetwork.shovel_explosion_pos.Value = player.transform.position + vector_changer;
                 LethalUpgradesBase.mls.LogInfo($"Shovel used by {player.playerClientId}");
                 // Landmine.SpawnExplosion(player.transform.position, true, 0, 0, 0, 100);
@@ -95,5 +94,23 @@ internal class UtilityPatching
     #endregion
 
     #region Utility Tier 3
+    /// What is equipment in my eyes? (And weighs > 0 lbs)
+    /// - Pro-flashlight
+    /// - Shovel
+    /// - Jetpack
+    /// - Lockpicker
+    /// - Radar-booster
+    /// - Spray Paint
+    /// - Stun Grenade
+    /// - Boombox
+    /// - Zap Gun
+    /// - Belt Bag
+    
+    // [HarmonyPatch(typeof(PlayerControllerB), "Update")]
+    // [HarmonyPostfix]
+    // static void UtilityTier3(PlayerControllerB __instance)
+    // {
+        
+    // }
     #endregion
 }

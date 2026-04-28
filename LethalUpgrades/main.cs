@@ -58,6 +58,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
     public static bool movement_t3 = false;
     [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave)]
     public static bool movement_leg = false;
+    [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave)]
     public static bool utility_t1 = false;
     [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave)]
     public static bool utility_t2 = false;
@@ -65,9 +66,8 @@ public class LethalUpgradesBase : BaseUnityPlugin
     public static bool utility_t3 = false;
     [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave)]
     public static bool utility_leg = false;
-    [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave)]
-    public static bool show_explosion = false;
-
+    public static bool show_explosion = true;
+    public static bool shovel_jump = false;
     public static Terminal ActiveTerminal()
     {
         Terminal[] terminals = UnityEngine.Object.FindObjectsByType<Terminal>(UnityEngine.FindObjectsSortMode.None);
@@ -101,6 +101,9 @@ public class LethalUpgradesBase : BaseUnityPlugin
 
     void Awake()
     {
+        show_explosion = true;
+        shovel_jump = false;
+
         if (Instance == null)
         {
             Instance = this;
@@ -172,13 +175,16 @@ public class LethalUpgradesBase : BaseUnityPlugin
         "- Legendary: While critically injured, become invisible.\n");
 
         AddCommand("upgrade utility info",
-        "These upgrades affect your equipment or utilities. They consist of the following:\n" +
+        "These upgrades affect your equipment or utilities. They consist of the following:\n" + //Done
         "- Tier 1: Increase flashlight battery capacities by 10%. Cost: $250\n" +
-        "- Tier 2: Shovel deals double damage. Explodes on hit as visual effect. Cost: $350\n" +
-        "   By default, explosion does no damage. Only shovel deals damage.\n" +
-        "   To turn explosion visual on or off, type 'shovel explosion' in the terminal.\n" +
-        "- Tier 3: Flashlights items can pass through the inverse teleporter. Cost: $400\n" +
-        "- Legendary: All equipment weighs 0 pounds.\n");
+        "- Tier 2: Shovel deals double damage, visually explodes and allows you to shovel jump. Cost: $350\n" + //Done
+        "   + By default, explosion does no damage.\n" +
+        "   + Only shovel deals damage.\n" +
+        "   + To turn explosion visual on or off, type 'shovel explosion' in the terminal.\n" +
+        "   + To turn shovel jump on or off, type 'shovel jump' in the terminal.\n" +
+        "   + Shovel jumping costs 2 hp and explosion must also be on.\n" +
+        "- Tier 3: All equipment weighs 0 pounds. Cost: $400\n" +
+        "- Legendary: Unlock 1 weather re-roll for the moon you orbit. Resets after going back to orbit.\n");
 
         // AddCommand("give money hehe", new CommandInfo()
         // {
@@ -205,8 +211,24 @@ public class LethalUpgradesBase : BaseUnityPlugin
             DisplayTextSupplier = () =>
             {
                 show_explosion = !show_explosion;
+                shovel_jump = false;
 
                 return $"Shovel Explosion set to: {show_explosion}.\n";                
+            }, Category = "Other"
+        });
+
+        AddCommand("shovel jump", new CommandInfo()
+        {
+            DisplayTextSupplier = () =>
+            {
+                if(!show_explosion)
+                {
+                    return $"You need to turn on shovel explosion before this!.\n";
+                }
+
+                shovel_jump = !shovel_jump;
+
+                return $"Shovel Jump set to: {shovel_jump}.\n";                
             }, Category = "Other"
         });
 
@@ -214,9 +236,14 @@ public class LethalUpgradesBase : BaseUnityPlugin
         {
             DisplayTextSupplier = () =>
             {
+                if(health_leg)
+                {
+                    return "You already have the legendary health upgrade!\n";
+                }
+
                 if(tokens <= 0)
                 {
-                    return "You need a token to buy the legendary health upgrade.";
+                    return "You need a token to buy the legendary health upgrade.\n";
                 }
 
                 tokens -= 1;
@@ -232,9 +259,14 @@ public class LethalUpgradesBase : BaseUnityPlugin
         {
             DisplayTextSupplier = () =>
             {
+                if(stamina_leg)
+                {
+                    return "You already have the legendary stamina upgrade!\n";
+                }
+
                 if(tokens <= 0)
                 {
-                    return "You need a token to buy the legendary stamina upgrade.";
+                    return "You need a token to buy the legendary stamina upgrade.\n";
                 }
 
                 tokens -= 1;
@@ -527,7 +559,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
                 LethalUpgradesNetwork.utility_t1.Value = true;
                 utility_t1 = true;
 
-                return $"Upgrade acquired. New balance of ${67}\n";
+                return $"Upgrade acquired. New balance of ${remainingCredits}\n";
             }, Category = "Other"
         });
 
@@ -556,9 +588,38 @@ public class LethalUpgradesBase : BaseUnityPlugin
                 LethalUpgradesNetwork.utility_t2.Value = true;
                 utility_t2 = true;
 
-                return $"Upgrade acquired. New balance of ${6}\n";
+                return $"Upgrade acquired. New balance of ${remainingCredits}\n";
             }, Category = "Other"
         });
+
+        // AddCommand("upgrade utility 3", new CommandInfo()
+        // {
+        //     DisplayTextSupplier = () =>
+        //     {
+        //         if (!utility_t2)
+        //         {
+        //             return "You require the tier 2 utility upgrade before this!\n";
+        //         }
+        //         if(utility_t3)
+        //         {
+        //             return "You already have this upgrade!\n";
+        //         }
+
+        //         var cost = 400;
+        //         var terminal = ActiveTerminal();
+        //         if(terminal.groupCredits < cost)
+        //         {
+        //             return $"Not enough credits for this upgrade. You need ${cost}\n";
+        //         }
+        //         var remainingCredits = terminal.groupCredits - cost;
+        //         SyncTerminals(remainingCredits: remainingCredits);
+
+        //         LethalUpgradesNetwork.utility_t3.Value = true;
+        //         utility_t3 = true;
+
+        //         return $"Upgrade acquired. New balance of ${remainingCredits}\n";
+        //     }, Category = "Other"
+        // });
         #endregion
     }
 }
@@ -960,10 +1021,19 @@ public class LethalUpgradesNetwork
             
             shovel_explosion_pos.OnValueChanged += (oldValue, newValue) =>
             {
-                LethalUpgradesBase.mls.LogInfo("Spawning explosion...");
-                Landmine.SpawnExplosion(newValue, LethalUpgradesBase.show_explosion, 0, 0, 0, 0);
-                // shovel_explosion_pos.Value = UnityEngine.Vector3.zero;
-                LethalUpgradesBase.mls.LogInfo("Explosion spawned!");
+                if(LethalUpgradesBase.show_explosion)
+                {
+                    LethalUpgradesBase.mls.LogInfo("Spawning explosion...");
+                    if(LethalUpgradesBase.shovel_jump)
+                    {
+                        Landmine.SpawnExplosion(newValue, true, 0, 10, 2, 20);
+                    }
+                    else
+                    {
+                        Landmine.SpawnExplosion(newValue, true, 0, 0, 0, 0);
+                    }
+                    LethalUpgradesBase.mls.LogInfo("Explosion spawned!");
+                }
             };
         }
     }

@@ -1,9 +1,15 @@
 # Releases
 
+## Version Release 1.2.2
+
+- Added shovel jumping with tier 2 utility upgrade.
+- Fixed grammar mistakes in-game.
+- Fixed utility upgrades not showing correct credit count after purchasing them.
+
 ## Version Release 1.2.0
 
 - Added tier 1 and 2 utility upgrades.
-    + Need to test tier 1 utility upgrade more.
+    + Need to test tier 2 utility upgrade more.
 - Added legendary health upgrade.
 
 

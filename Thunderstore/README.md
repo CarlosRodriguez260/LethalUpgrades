@@ -36,15 +36,18 @@ Utility - They might be useful.
 - Tier 2: Shovels deal double damage. Explodes on hit as visual effect. 
     + By default, explosion does no damage. Only shovel deals damage.
     + To turn explosion visual on or off, type `shovel explosion`.
+    + If explosion is on, you can also toggle off or on shovel jumping!
+        - At the cost of 2hp, elevate yourself with your shovel quite the height!
+        - If your teammate has shovel jump on, he wil also be affected, just... be careful where you send him.
 
 ## To-be Offered
 
 Utility - They might be useful.
-- Tier 3: Obtain a second free cruiser replacement.
+- Tier 3: All equipment weighs 0 pounds. Cost: $400
 
 Legendaries 
 - Movement: While critically injured, become invisible.
-- Utilities: All equipment weighs 0 pounds. 
+- Utilities: Unlock 1 weather re-roll for any moon you orbit. Resets after leaving a moon. 
 
 # General Information
 
@@ -52,7 +55,7 @@ On a side note, welcome to the Lethal Upgrades mod! \
 Trying to bring less stagnation and more gameplay diversity through this mod. \
 Upgrades are usually focused on different categories that benefit the player. \
 These upgrades either take credits or use tokens, such as the legendary ones! \
-Upgrades are *progressive*, meaning they need to be bought in order.
+Upgrades are *progressive*, meaning they need to be bought in order, except legendary ones. \
 
 <details>
     <summary> <b>Token System [SPOILERS]</b> </summary>
@@ -102,6 +105,7 @@ Extra Commands
 | `upgrade movement info` | Summarizes movement upgrades and their costs. |
 | `upgrade utility info`  | Summarizes utility upgrades and their costs.  |
 | `shovel explosion`  | Turns off or on shovel explosion effect. Client-sided.  |
+| `shovel jump`  | Turns off or on shovel explosion effect. Client-sided.  |
 
 ## Multiplayer Status
 
