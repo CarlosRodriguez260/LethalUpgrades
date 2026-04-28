@@ -1,5 +1,9 @@
 # Releases
 
+## Version Release 1.2.3
+
+- Fixed README (why do i suck at reading them).
+
 ## Version Release 1.2.2
 
 - Added shovel jumping with tier 2 utility upgrade.

@@ -39,6 +39,7 @@ Utility - They might be useful.
     + If explosion is on, you can also toggle off or on shovel jumping!
         - At the cost of 2hp, elevate yourself with your shovel quite the height!
         - If your teammate has shovel jump on, he wil also be affected, just... be careful where you send him.
+        - Type `shovel jump` in terminal to toggle it on or off. 
 
 ## To-be Offered
 
@@ -105,7 +106,7 @@ Extra Commands
 | `upgrade movement info` | Summarizes movement upgrades and their costs. |
 | `upgrade utility info`  | Summarizes utility upgrades and their costs.  |
 | `shovel explosion`  | Turns off or on shovel explosion effect. Client-sided.  |
-| `shovel jump`  | Turns off or on shovel explosion effect. Client-sided.  |
+| `shovel jump`  | Turns off or on shovel jumping. Client-sided.  |
 
 ## Multiplayer Status
 
