@@ -1,5 +1,9 @@
 # Releases
 
+## Version Release 1.2.5
+
+- Added tier 3 utility upgrade.
+
 ## Version Release 1.2.3
 
 - Fixed README (why do i suck at reading them).

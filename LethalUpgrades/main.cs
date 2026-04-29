@@ -232,6 +232,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
             }, Category = "Other"
         });
 
+        #region Legendaries
         AddCommand("upgrade token health", new CommandInfo()
         {
             DisplayTextSupplier = () =>
@@ -277,6 +278,30 @@ public class LethalUpgradesBase : BaseUnityPlugin
                 return "Acquired legendary stamina upgrade!\n";                
             }, Category = "Other"
         });
+
+        // AddCommand("upgrade token utility", new CommandInfo()
+        // {
+        //     DisplayTextSupplier = () =>
+        //     {
+        //         if(utility_leg)
+        //         {
+        //             return "You already have the legendary utility upgrade!\n";
+        //         }
+
+        //         if(tokens <= 0)
+        //         {
+        //             return "You need a token to buy the legendary utility upgrade.\n";
+        //         }
+
+        //         tokens -= 1;
+        //         LethalUpgradesNetwork.tokens.Value = tokens;
+        //         LethalUpgradesNetwork.utility_leg.Value = true;
+        //         utility_leg = true;
+
+        //         return "Acquired legendary utility upgrade!\n";                
+        //     }, Category = "Other"
+        // });
+        #endregion
 
         #region Health Upgrades
         AddCommand("upgrade health 1", new CommandInfo()
@@ -592,34 +617,34 @@ public class LethalUpgradesBase : BaseUnityPlugin
             }, Category = "Other"
         });
 
-        // AddCommand("upgrade utility 3", new CommandInfo()
-        // {
-        //     DisplayTextSupplier = () =>
-        //     {
-        //         if (!utility_t2)
-        //         {
-        //             return "You require the tier 2 utility upgrade before this!\n";
-        //         }
-        //         if(utility_t3)
-        //         {
-        //             return "You already have this upgrade!\n";
-        //         }
+        AddCommand("upgrade utility 3", new CommandInfo()
+        {
+            DisplayTextSupplier = () =>
+            {
+                if (!utility_t2)
+                {
+                    return "You require the tier 2 utility upgrade before this!\n";
+                }
+                if(utility_t3)
+                {
+                    return "You already have this upgrade!\n";
+                }
 
-        //         var cost = 400;
-        //         var terminal = ActiveTerminal();
-        //         if(terminal.groupCredits < cost)
-        //         {
-        //             return $"Not enough credits for this upgrade. You need ${cost}\n";
-        //         }
-        //         var remainingCredits = terminal.groupCredits - cost;
-        //         SyncTerminals(remainingCredits: remainingCredits);
+                var cost = 400;
+                var terminal = ActiveTerminal();
+                if(terminal.groupCredits < cost)
+                {
+                    return $"Not enough credits for this upgrade. You need ${cost}\n";
+                }
+                var remainingCredits = terminal.groupCredits - cost;
+                SyncTerminals(remainingCredits: remainingCredits);
 
-        //         LethalUpgradesNetwork.utility_t3.Value = true;
-        //         utility_t3 = true;
+                LethalUpgradesNetwork.utility_t3.Value = true;
+                utility_t3 = true;
 
-        //         return $"Upgrade acquired. New balance of ${remainingCredits}\n";
-        //     }, Category = "Other"
-        // });
+                return $"Upgrade acquired. New balance of ${remainingCredits}\n";
+            }, Category = "Other"
+        });
         #endregion
     }
 }

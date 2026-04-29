@@ -94,23 +94,37 @@ internal class UtilityPatching
     #endregion
 
     #region Utility Tier 3
-    /// What is equipment in my eyes? (And weighs > 0 lbs)
-    /// - Pro-flashlight
-    /// - Shovel
-    /// - Jetpack
-    /// - Lockpicker
-    /// - Radar-booster
-    /// - Spray Paint
-    /// - Stun Grenade
-    /// - Boombox
-    /// - Zap Gun
-    /// - Belt Bag
-    
-    // [HarmonyPatch(typeof(PlayerControllerB), "Update")]
-    // [HarmonyPostfix]
-    // static void UtilityTier3(PlayerControllerB __instance)
-    // {
-        
-    // }
+    [HarmonyPatch(typeof(GrabbableObject), "LateUpdate")]
+    [HarmonyPostfix]
+    static void Weight0(GrabbableObject __instance)
+    {
+        if(!LethalUpgradesBase.utility_t3) return;
+
+        var player = GameNetworkManager.Instance.localPlayerController;
+        if(player == null) return; 
+
+        var equipment_name = __instance.itemProperties.itemName;
+        switch(equipment_name)
+        {
+            case "Pro-flashlight":
+            case "Shovel":
+            case "Jetpack":
+            case "Lockpicker":
+            case "Radar-booster":
+            case "Stun grenade":
+            case "Boombox":
+            case "Zap gun":
+            case "Belt bag":
+                if(__instance.itemProperties.weight != 1)
+                {
+                    __instance.itemProperties.weight = 1f;
+                    LethalUpgradesBase.mls.LogInfo($"Dropped weight of {__instance.itemProperties.itemName} to 0");
+                }
+                break;
+        }
+    }
+    #endregion
+
+    #region Utility Tier Legendary
     #endregion
 }

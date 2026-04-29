@@ -40,15 +40,15 @@ Utility - They might be useful.
         - At the cost of 2hp, elevate yourself with your shovel quite the height!
         - If your teammate has shovel jump on, he wil also be affected, just... be careful where you send him.
         - Type `shovel jump` in terminal to toggle it on or off. 
+- Tier 3: All equipment weighs 0 pounds. Cost: $400
 
 ## To-be Offered
-
-Utility - They might be useful.
-- Tier 3: All equipment weighs 0 pounds. Cost: $400
 
 Legendaries 
 - Movement: While critically injured, become invisible.
 - Utilities: Unlock 1 weather re-roll for any moon you orbit. Resets after leaving a moon. 
+
+More to come soon...
 
 # General Information
 
@@ -56,7 +56,7 @@ On a side note, welcome to the Lethal Upgrades mod! \
 Trying to bring less stagnation and more gameplay diversity through this mod. \
 Upgrades are usually focused on different categories that benefit the player. \
 These upgrades either take credits or use tokens, such as the legendary ones! \
-Upgrades are *progressive*, meaning they need to be bought in order, except legendary ones. \
+Upgrades are *progressive*, meaning they need to be bought in order, except legendary ones. 
 
 <details>
     <summary> <b>Token System [SPOILERS]</b> </summary>
@@ -115,7 +115,11 @@ MULTIPLAYER STATUS: 🟢
 - 🟡 Testing
 - 🟢 Operational
 
-## Bugs
+## Bugs and Recommendations
 
 Please report any bugs, specially multiplayer ones, to try and patch them ASAP. \
+If you wanna report a bug or recommend something: 
+- Form: https://forms.gle/L3VPdXoyWeRz6P858
+- None serious responses WILL be ignored.
+
 Still a WIP, so bare with me. I plan to add more in the future.
