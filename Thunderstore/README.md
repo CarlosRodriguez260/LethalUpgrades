@@ -14,7 +14,7 @@ Seems fair... *right?*
 ## Currently Offering - Player Upgrades
 Health - Take a few more thumper hits!
 - Tier 1: Gain +20 additional health.
-- Tier 2: Reduce all incoming damage by 5%. 
+- Tier 2: Reduce all incoming damage by 10%. 
 - Tier 3: Gain +30 additional health. 
 - Legendary: Gain an adaptive regeneration ability.
     + If you are below 50% health, gain +0.5 hp/s regen until back up to 50%.

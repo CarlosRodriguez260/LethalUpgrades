@@ -1,5 +1,11 @@
 # Releases
 
+## Version Release 1.3.1
+
+- Fixed bug where you would stay critically injured if healed from below 20hp by legendary health upgrade.
+- Fixed bug where going into critical health multiple times outrageously sped up your legendary regeneration.
+- Buffed tier 2 health upgrade damage reduction from 5% -> 10%
+
 ## Version Release 1.3.0
 
 - Added legendary utility upgrade.

@@ -8,6 +8,7 @@ using GameNetcodeStuff;
 using HarmonyLib;
 using UnityEngine;
 using System.Timers;
+using System.Collections;
 
 namespace LethalUpgrades.Patches;
 internal class HealthPatching
@@ -124,10 +125,12 @@ internal class HealthPatching
     #endregion
 
     #region Health Tier Legendary
-    internal static bool heal_50 = false;
-    internal static bool timer_20 = false;
-    internal static int up_to = 0;
+    internal static bool heal_50_active = false;
+    internal static bool heal_timer_active = false;
+    internal static int heal_timer_seconds = 0;
     internal static int max_health = 100;
+    private static Coroutine activeHeal50Coroutine;
+    private static Coroutine activeHealTimerCoroutine;
 
     [HarmonyPatch(typeof(PlayerControllerB), "DamagePlayer")]
     [HarmonyPostfix]
@@ -136,90 +139,214 @@ internal class HealthPatching
         if (__instance == null) return;
         if (__instance != GameNetworkManager.Instance?.localPlayerController) return;
 
-        if(LethalUpgradesBase.health_t3){max_health = 150;}
-        else if(LethalUpgradesBase.health_t1){max_health = 120;}
+        // Update max health based on upgrades
+        if(LethalUpgradesBase.health_t3) { max_health = 150; }
+        else if(LethalUpgradesBase.health_t1) { max_health = 120; }
+        else { max_health = 100; }
 
-        int threshold = max_health/2;
-        if(LethalUpgradesBase.health_leg && __instance.health>threshold)
+        var local_hud = HUDManager.Instance;
+        if(local_hud == null)
         {
-            if(!timer_20)
+            LethalUpgradesBase.mls.LogInfo("Could not find local player HUD");
+            return;
+        }
+
+        int threshold = max_health / 2;
+        
+        // Above 50% health - start/continue 20-second heal timer
+        if(LethalUpgradesBase.health_leg && __instance.health > threshold)
+        {
+            if(!heal_timer_active)
             {
-                timer_20 = true;
-                UpTo20HealTo100(__instance, max_health);
+                // Stop any existing timer coroutine
+                if(activeHealTimerCoroutine != null)
+                {
+                    __instance.StopCoroutine(activeHealTimerCoroutine);
+                }
+                
+                heal_timer_active = true;
+                heal_timer_seconds = 0;
+                activeHealTimerCoroutine = __instance.StartCoroutine(HealTimerCoroutine(__instance, local_hud, max_health));
             }
             else
             {
-                LethalUpgradesBase.mls.LogInfo("Interrupted heal timer!");
-                up_to = 0;
+                LethalUpgradesBase.mls.LogInfo("Heal timer interrupted and reset!");
+                if(activeHealTimerCoroutine != null)
+                {
+                    __instance.StopCoroutine(activeHealTimerCoroutine);
+                }
+                heal_timer_seconds = 0;
+                activeHealTimerCoroutine = __instance.StartCoroutine(HealTimerCoroutine(__instance, local_hud, max_health));
             }
         }
-        else if(LethalUpgradesBase.health_leg && __instance.health<threshold && timer_20)
+        // Below 50% health - interrupt timer and start slow heal
+        else if(LethalUpgradesBase.health_leg && __instance.health < threshold)
         {
-            LethalUpgradesBase.mls.LogInfo("Interrupted heal timer, and now below 50% health!");
-            up_to = 0;
-            timer_20 = false;
-        }
-
-        if(LethalUpgradesBase.health_leg && __instance.health<threshold)
-        {
-            heal_50 = true;
-            HealTo50(__instance, max_health/2);
+            // Cancel timer if it was running
+            if(heal_timer_active)
+            {
+                LethalUpgradesBase.mls.LogInfo("Heal timer interrupted - health dropped below 50%!");
+                heal_timer_active = false;
+                heal_timer_seconds = 0;
+                
+                if(activeHealTimerCoroutine != null)
+                {
+                    __instance.StopCoroutine(activeHealTimerCoroutine);
+                    activeHealTimerCoroutine = null;
+                }
+            }
+            
+            // Start slow heal to 50% if not already running
+            if(!heal_50_active)
+            {
+                // Stop any existing heal coroutine
+                if(activeHeal50Coroutine != null)
+                {
+                    __instance.StopCoroutine(activeHeal50Coroutine);
+                }
+                
+                heal_50_active = true;
+                activeHeal50Coroutine = __instance.StartCoroutine(HealTo50Coroutine(__instance, local_hud, threshold));
+            }
         }
     }
 
     [HarmonyPatch(typeof(GameNetworkManager), "Disconnect")]
     [HarmonyPostfix]
-    static void StopTasks()
+    static void StopAllHealCoroutines()
     {
-        LethalUpgradesBase.mls.LogInfo("Stopping all heal methods");
-        timer_20 = false;
-        heal_50 = false;
-        LethalUpgradesBase.mls.LogInfo("Stopped all heal methods");
+        LethalUpgradesBase.mls.LogInfo("Stopping all heal coroutines");
+        
+        var localPlayer = GameNetworkManager.Instance?.localPlayerController;
+        if (localPlayer != null)
+        {
+            if(activeHealTimerCoroutine != null)
+            {
+                localPlayer.StopCoroutine(activeHealTimerCoroutine);
+                activeHealTimerCoroutine = null;
+            }
+            
+            if(activeHeal50Coroutine != null)
+            {
+                localPlayer.StopCoroutine(activeHeal50Coroutine);
+                activeHeal50Coroutine = null;
+            }
+        }
+        
+        heal_timer_active = false;
+        heal_50_active = false;
+        heal_timer_seconds = 0;
+        
+        LethalUpgradesBase.mls.LogInfo("All heal coroutines stopped");
     }
 
-    static async Task UpTo20HealTo100(PlayerControllerB player, int max_health)
+    private static IEnumerator HealTimerCoroutine(PlayerControllerB player, HUDManager local_hud, int maxHealth)
     {
-        while(timer_20)
+        LethalUpgradesBase.mls.LogInfo("Heal timer started - 20 seconds until regeneration begins");
+        
+        // Wait 20 seconds, checking for interruptions
+        while(heal_timer_seconds < 20 && heal_timer_active)
         {
-            if(up_to<20)
+            // Check if health dropped below threshold (interruption condition)
+            int threshold = maxHealth / 2;
+            if(player.health <= threshold)
             {
-                if(!timer_20)
+                LethalUpgradesBase.mls.LogInfo("Heal timer interrupted - health dropped below 50%");
+                heal_timer_active = false;
+                yield break;
+            }
+            
+            // Check if player died or upgrade was removed
+            if(player == null || player.isPlayerDead || !LethalUpgradesBase.health_leg)
+            {
+                LethalUpgradesBase.mls.LogInfo("Heal timer cancelled - invalid state");
+                heal_timer_active = false;
+                yield break;
+            }
+            
+            heal_timer_seconds++;
+            LethalUpgradesBase.mls.LogInfo($"Heal timer: {heal_timer_seconds}/20 seconds");
+            yield return new WaitForSeconds(1f);
+        }
+        
+        // Start regeneration if timer completed and still active
+        if(heal_timer_active && heal_timer_seconds >= 20)
+        {
+            LethalUpgradesBase.mls.LogInfo($"Heal timer complete! Beginning regeneration to {maxHealth}");
+            
+            // Regenerate 2 HP per second until at max health
+            while(heal_timer_active && player.health < maxHealth)
+            {
+                // Check for interruptions during regeneration
+                int threshold = maxHealth / 2;
+                if(player.health <= threshold)
                 {
+                    LethalUpgradesBase.mls.LogInfo("Regeneration interrupted - health dropped below 50%");
                     break;
                 }
-                up_to++;
-                LethalUpgradesBase.mls.LogInfo($"Heal timer is at {up_to} seconds");
-                await Task.Delay(1000);
-            }
-            else
-            {
-                // 20 seconds passed
-                player.health += 2;
-                if(player.health>=max_health)
+                
+                if(player == null || player.isPlayerDead || !LethalUpgradesBase.health_leg)
                 {
-                    player.health = max_health;
-                    up_to = 0;
-                    timer_20 = false;
+                    LethalUpgradesBase.mls.LogInfo("Regeneration cancelled - invalid state");
+                    break;
                 }
-                await Task.Delay(1000);
+                
+                // Heal 2 HP per second
+                player.health = Mathf.Min(player.health + 2, maxHealth);
+                local_hud.UpdateHealthUI(player.health, hurtPlayer: false);
+                LethalUpgradesBase.mls.LogInfo($"Regeneration: {player.health}/{maxHealth}");
+                
+                yield return new WaitForSeconds(1f);
             }
+            
+            LethalUpgradesBase.mls.LogInfo(player.health >= maxHealth ? "Regeneration complete!" : "Regeneration stopped early");
+            
+            // Reset for next time
+            heal_timer_active = false;
+            heal_timer_seconds = 0;
         }
+        
+        activeHealTimerCoroutine = null;
     }
 
-    static async Task HealTo50(PlayerControllerB player, int half_health)
+    private static IEnumerator HealTo50Coroutine(PlayerControllerB player, HUDManager local_hud, int threshold)
     {
-        while(player.health<half_health && heal_50)
+        LethalUpgradesBase.mls.LogInfo("Slow heal started - healing to 50% health");
+        
+        while(heal_50_active && player.health < threshold)
         {
-            if(player.health<half_health)
+            // Check if player died or upgrade was removed
+            if(player == null || player.isPlayerDead || !LethalUpgradesBase.health_leg)
             {
-                player.health += 1;
+                LethalUpgradesBase.mls.LogInfo("Slow heal cancelled - invalid state");
+                break;
             }
-            else
+            
+            // Handle critically injured state
+            if(player.criticallyInjured && player.health >= 20)
             {
-                heal_50 = false;
+                player.criticallyInjured = false;
+                player.playerBodyAnimator.SetBool("Limp", false);
+                player.bleedingHeavily = false;
+                player.healthRegenerateTimer = 0f;
+                local_hud.UpdateHealthUI(player.health, hurtPlayer: false);
+                LethalUpgradesBase.mls.LogInfo("Critically injured state cleared");
             }
-            await Task.Delay(2000);
+            
+            // Heal 1 HP every 2 seconds
+            if(player.health < threshold)
+            {
+                player.health = Mathf.Min(player.health + 1, threshold);
+                local_hud.UpdateHealthUI(player.health, hurtPlayer: false);
+                LethalUpgradesBase.mls.LogInfo($"Slow heal: {player.health}/{threshold}");
+            }
+            
+            yield return new WaitForSeconds(2f);
         }
+        
+        LethalUpgradesBase.mls.LogInfo("Slow heal complete - reached 50% health");
+        heal_50_active = false;
+        activeHeal50Coroutine = null;
     }
     #endregion
 }
