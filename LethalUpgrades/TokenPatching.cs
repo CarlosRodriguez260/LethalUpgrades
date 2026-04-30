@@ -1,5 +1,6 @@
 using GameNetcodeStuff;
 using HarmonyLib;
+using LethalNetworkAPI.Utils;
 using TMPro;
 using UnityEngine;
 
@@ -41,6 +42,7 @@ internal class TokenPatching
 
         if(LethalUpgradesBase.token_meter >= 100)
         {
+            LethalUpgradesBase.mls.LogInfo("Filled Token Meter!");
             LethalUpgradesBase.token_meter = LethalUpgradesBase.token_meter-100;
             __instance.StartCoroutine(DelayedTipDisplay(__instance));
             LethalUpgradesBase.mls.LogInfo($"Token Meter: {LethalUpgradesBase.token_meter}/100");
@@ -52,7 +54,34 @@ internal class TokenPatching
     private static System.Collections.IEnumerator DelayedTipDisplay(HUDManager __instance)
     {
         yield return new WaitForSeconds(22f);
-        LethalUpgradesBase.tokens += 1;
-        __instance.DisplayTip("Lethal Upgrades", "Your performance thus far was considered acceptable. An upgrade token has been transferred!.");
+        LethalUpgradesNetwork.tokens.Value += 1;
+        __instance.DisplayTip("Lethal Upgrades", "Your performance thus far was considered acceptable. An upgrade token has been transferred!");
+    }
+
+    [HarmonyPatch(typeof(StartOfRound), "Start")]
+    [HarmonyPostfix]
+    static void PreScumCreditFix()
+    {
+        LethalUpgradesBase.mls.LogInfo("StartOfRound initiated!");
+        LethalUpgradesBase.mls.LogInfo($"Pre-scum credits = {LethalUpgradesBase.pre_scum_scredits}");
+        if(LethalUpgradesBase.pre_scum_scredits > 0)
+        {
+            LethalUpgradesBase.mls.LogInfo("Setting pre-scum credits. Check one.");
+            var terminal = UnityEngine.Object.FindFirstObjectByType<Terminal>();
+            if(terminal == null)
+            {
+                LethalUpgradesBase.mls.LogInfo("Tried setting pre-scum credits, but did not find terminal");
+                return;
+            }
+            CreditFix(terminal);
+        }
+    }
+
+    static async Task CreditFix(Terminal terminal)
+    {
+        await Task.Delay(1000);
+        LethalUpgradesBase.mls.LogInfo("Setting pre-scum credits. Check two.");
+        terminal.SyncGroupCreditsServerRpc(LethalUpgradesBase.pre_scum_scredits, terminal.numberOfItemsInDropship);
+        LethalUpgradesBase.mls.LogInfo("Setting pre-scum credits. Succesful.");
     }
 }

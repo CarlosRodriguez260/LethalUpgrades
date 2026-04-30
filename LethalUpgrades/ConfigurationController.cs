@@ -26,6 +26,6 @@ internal class ConfigurationController
 
     public ConfigurationController(ConfigFile Config)
     {
-        ServerNameCfg = Config.Bind("Server Settings", "Server Name", "Default Server Name", "A");
+        ServerNameCfg = Config.Bind("Server Settings", "Server Name", "Chuito's Lethal Server", "You don't have the power to change more...");
     }
 }

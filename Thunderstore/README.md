@@ -11,7 +11,7 @@ They come at a cost, but we can offer you the chance to **[FEED HIM MORE]**
 while powering you up! \
 Seems fair... *right?*
 
-## Currently Offering
+## Currently Offering - Player Upgrades
 Health - Take a few more thumper hits!
 - Tier 1: Gain +20 additional health.
 - Tier 2: Reduce all incoming damage by 5%. 
@@ -41,12 +41,16 @@ Utility - They might be useful.
         - If your teammate has shovel jump on, he wil also be affected, just... be careful where you send him.
         - Type `shovel jump` in terminal to toggle it on or off. 
 - Tier 3: All equipment weighs 0 pounds. Cost: $400
+- Legendary: Unlock 1 weather re-roll for any moon you orbit. Resets after leaving a moon. 
+    + Grants you one re-roll to change the weather of the moon you are orbiting!
+    + Once you use it, it will only reset after you land on a moon and come back to orbit.
+    + The re-roll chooses randomly, so you *might* get the same weather twice. Oops!
+    + To re-roll, type `weather reroll` in the terminal.
 
 ## To-be Offered
 
 Legendaries 
 - Movement: While critically injured, become invisible.
-- Utilities: Unlock 1 weather re-roll for any moon you orbit. Resets after leaving a moon. 
 
 More to come soon...
 
@@ -100,13 +104,15 @@ Extra Commands
 | Command                 | Description                                   |
 |-------------------------|-----------------------------------------------|
 | `upgrade`               | Brief explanation of the mod.                 |
+| `upgrade list`          | Shows all upgrades and which ones you already have.                 |
 | `upgrade token`         | Brief explanation on upgrade tokens.          |
 | `upgrade health info`   | Summarizes health upgrades and their costs.   |
 | `upgrade stamina info`  | Summarizes stamina upgrades and their costs.  |
 | `upgrade movement info` | Summarizes movement upgrades and their costs. |
 | `upgrade utility info`  | Summarizes utility upgrades and their costs.  |
-| `shovel explosion`  | Turns off or on shovel explosion effect. Client-sided.  |
-| `shovel jump`  | Turns off or on shovel jumping. Client-sided.  |
+| `shovel explosion`  | Toggles shovel explosion effect on or off. Client-sided.  |
+| `shovel jump`  | Toggles shovel jumping on or off. Client-sided.  |
+| `weather reroll` | Re-roll the weather of the moon you orbit. |
 
 ## Multiplayer Status
 

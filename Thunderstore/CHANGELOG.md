@@ -1,5 +1,13 @@
 # Releases
 
+## Version Release 1.3.0
+
+- Added legendary utility upgrade.
+- Fixed tokens not syncing up correctly between host and clients.
+- Fixed credit count not saving correctly when host save-scums after buying an upgrade.
+- Disabled shovel explosions in orbit or when going into orbit.
+    + Landmine explosions are not spawnable mid-orbit.
+
 ## Version Release 1.2.5
 
 - Added tier 3 utility upgrade.

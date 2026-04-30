@@ -29,12 +29,12 @@ internal class UtilityPatching
                 if(__instance.itemProperties.itemName == "Flashlight")
                 {
                     __instance.itemProperties.batteryUsage = upgraded_flash_duration;
-                    // LethalUpgradesBase.mls.LogInfo($"Battery Usage Post-upgrade: {__instance.itemProperties.batteryUsage}");
+                    LethalUpgradesBase.mls.LogInfo($"Battery Usage Post-upgrade: {__instance.itemProperties.batteryUsage}");
                 }
                 else if(__instance.itemProperties.itemName == "Pro-flashlight")
                 {
                     __instance.itemProperties.batteryUsage = upgraded_proflash_duration;
-                    // LethalUpgradesBase.mls.LogInfo($"Battery Usage Post-upgrade: {__instance.itemProperties.batteryUsage}");
+                    LethalUpgradesBase.mls.LogInfo($"Battery Usage Post-upgrade: {__instance.itemProperties.batteryUsage}");
                 }
             }
         }
@@ -65,6 +65,7 @@ internal class UtilityPatching
     }
 
     static float changer = -0.9f;
+    static bool explode_off = false;
     [HarmonyPatch(typeof(Shovel), "HitShovel")]
     [HarmonyPostfix]
     static void UtilityTier2Explosion(Shovel __instance)
@@ -72,7 +73,7 @@ internal class UtilityPatching
         if (LethalUpgradesBase.utility_t2)
         {
             var player = GameNetworkManager.Instance.localPlayerController;
-            if(player.isHoldingObject && __instance.playerHeldBy==player)
+            if(player.isHoldingObject && __instance.playerHeldBy==player && !explode_off)
             {
                 LethalUpgradesBase.mls.LogInfo($"Changer value: {changer}");
                 UnityEngine.Vector3 vector_changer = new UnityEngine.Vector3(0, changer, 0);
@@ -90,6 +91,35 @@ internal class UtilityPatching
                 // Landmine.SpawnExplosion(player.transform.position, true, 0, 0, 0, 100);
             }
         }
+    }
+
+    static bool timer_on = false;
+    [HarmonyPatch(typeof(StartOfRound), "Update")]
+    [HarmonyPostfix]
+    static void TempExplosionDisable(StartOfRound __instance)
+    {
+        if(!LethalUpgradesBase.utility_t2) return;
+
+        if(__instance.inShipPhase)
+        {
+            if(explode_off)
+            {
+                explode_off = false;
+                timer_on = false;
+            }
+        }
+
+        if(__instance.shipIsLeaving && !timer_on)
+        {
+            timer_on = true;
+            ExplosionTimer();
+        }
+    }
+
+    static async Task ExplosionTimer()
+    {
+        await Task.Delay(7500);
+        explode_off = true;
     }
     #endregion
 
@@ -126,5 +156,18 @@ internal class UtilityPatching
     #endregion
 
     #region Utility Tier Legendary
+    [HarmonyPatch(typeof(HUDManager), "FillEndGameStats")]
+    [HarmonyPostfix]
+    static void RefreshRoll()
+    {
+        LethalUpgradesBase.pre_scum_scredits = 0;
+        if(!LethalUpgradesBase.utility_leg) return;
+
+        if(LethalUpgradesBase.reroll == false)
+        {
+            LethalUpgradesNetwork.reroll.Value = true;
+            LethalUpgradesBase.reroll = true;
+        }
+    }
     #endregion
 }

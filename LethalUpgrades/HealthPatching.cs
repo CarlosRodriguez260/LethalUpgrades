@@ -97,7 +97,7 @@ internal class HealthPatching
 
         if(LethalUpgradesBase.health_t2)
         {
-            damageNumber = Mathf.RoundToInt(damageNumber * 0.95f);
+            damageNumber = Mathf.RoundToInt(damageNumber * 0.90f);
             last_damage = damageNumber;
             last_health = __instance.health;
             check_damage = true;
