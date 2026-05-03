@@ -1,5 +1,3 @@
-Thunderstore Link: https://thunderstore.io/c/lethal-company/p/LethalUpgrades/LethalUpgrades/ 
-
 # Join the new Lethal Upgrades Program!
 
 We heard some employees could not complete their quotas, complaining and exclaiming
@@ -31,7 +29,11 @@ Stamina - More items carried, more **[FEEDING IT]**
 Movement - Run away from that vile giant.
 - Tier 1: Sprint 6% faster.
 - Tier 2: Walk/Crouch 10% faster.
-- Tier 3: Increased jump height by 25%. 
+- Tier 3: Increased jump height by 25%.
+- Legendary: While critically injured, gain movement speed and intangibility.
+    + Always gain 1.5x more movement speed.
+    + Become invisible to some enemies and invulnerable to all.
+        - Has a 120 second cooldown after recovering from critical health.
 
 Utility - They might be useful.
 - Tier 1: Increase flashlight battery capacities by 10%.
@@ -51,10 +53,15 @@ Utility - They might be useful.
 
 ## To-be Offered
 
-Legendaries 
-- Movement: While critically injured, become invisible.
+More to come soon, such as:
+- Rotational Modifier Store
+- Ship Upgrades
+- And more...
 
-More to come soon...
+## NewGame+ Functionality
+
+Did your squad wipe and lose the run? \
+Well don't fret, because obtained upgrades always stay with you in the same save file! \
 
 # General Information
 
@@ -122,6 +129,7 @@ MULTIPLAYER STATUS: 🟢
 - 🔴 Not working
 - 🟡 Testing
 - 🟢 Operational
+    + Though operational, it's definitely not perfect.
 
 ## Bugs and Recommendations
 

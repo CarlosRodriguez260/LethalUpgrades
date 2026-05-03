@@ -1,5 +1,12 @@
 # Releases
 
+## Version Release 1.3.5
+
+- Fixed bug where you would get more than one upgrade token in multiplayer sessions.
+    + Hosts are now the only people that can increase a token meter.
+    + If a host fills up the meter, the token *should* show up for everyone.
+- Added legendary movement upgrade.
+
 ## Version Release 1.3.1
 
 - Fixed bug where you would stay critically injured if healed from below 20hp by legendary health upgrade.

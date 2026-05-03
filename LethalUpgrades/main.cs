@@ -12,6 +12,7 @@ using LethalNetworkAPI.Utils;
 using System.Numerics;
 using UnityEngine.UI;
 using System.Diagnostics.Tracing;
+using DigitalRuby.ThunderAndLightning;
 
 
 
@@ -124,7 +125,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
         harmony.PatchAll(typeof(HealthPatching));
         harmony.PatchAll(typeof(StaminaPatching));
         harmony.PatchAll(typeof(MovementPatching));
-        // harmony.PatchAll(typeof(DebugPatching)); //Uncomment to have logs in BepInEx console
+        harmony.PatchAll(typeof(DebugPatching)); //Uncomment to have logs in BepInEx console
         harmony.PatchAll(typeof(TokenPatching));
         harmony.PatchAll(typeof(HostClientPatching));
         harmony.PatchAll(typeof(UtilityPatching));
@@ -166,28 +167,28 @@ public class LethalUpgradesBase : BaseUnityPlugin
         
         AddCommand("upgrade health info",
         "These upgrades affect your health. They consist of the following:\n" +
-        "- Tier 1: Gain +20 additional health. Cost: $200\n" + //Done
-        "- Tier 2: Reduce all incoming damage by 10%. Cost: $300\n" + //Done
-        "- Tier 3: Gain +30 additional health. Cost: $400\n" + //Done
+        "- Tier 1: Gain +20 additional health. Cost: $200\n" + 
+        "- Tier 2: Reduce all incoming damage by 10%. Cost: $300\n" + 
+        "- Tier 3: Gain +30 additional health. Cost: $400\n" + 
         "- Legendary: Gain an adaptive regeneration ability.\n\n" + 
         "NOTE: Health-increasing upgrades only apply while in orbit.\n");
 
         AddCommand("upgrade stamina info",
         "These upgrades affect your stamina. They consist of the following:\n" +
-        "- Tier 1: Decrease running stamina usage. Cost: $300\n" + //Done
-        "- Tier 2: Improve stamina regen by 10%. Cost: $400\n" + //Done
+        "- Tier 1: Decrease running stamina usage. Cost: $300\n" + 
+        "- Tier 2: Improve stamina regen by 10%. Cost: $400\n" + 
         "- Tier 3: Reduced stamina penalties when heavy (>=50 lbs). Cost: $500\n" +
         "- Legendary: When damaged, regardless of amount or source, gain full stamina back.\n");
 
         AddCommand("upgrade movement info",
         "These upgrades affect your movement. They consist of the following:\n" +
-        "- Tier 1: Sprint 6% faster. Cost: $250\n" + //Done
-        "- Tier 2: Walk/Crouch 10% faster. Cost: $350\n" + //Done
-        "- Tier 3: Jump height increased by 25%. Cost: $400\n" + //Done
-        "- Legendary: While critically injured, become invisible.\n");
+        "- Tier 1: Sprint 6% faster. Cost: $250\n" + 
+        "- Tier 2: Walk/Crouch 10% faster. Cost: $350\n" + 
+        "- Tier 3: Jump height increased by 25%. Cost: $400\n" + 
+        "- Legendary: While critically injured, always gain more movement speed. Become intangible as well, but goes on cooldown for 120 seconds.\n");
 
         AddCommand("upgrade utility info",
-        "These upgrades affect your equipment or utilities. They consist of the following:\n" + //Done
+        "These upgrades affect your equipment or utilities. They consist of the following:\n" + 
         "- Tier 1: Increase flashlight battery capacities by 10%. Cost: $250\n" +
         "- Tier 2: Shovel deals double damage, visually explodes and allows you to shovel jump. Cost: $350\n" + //Done
         "   + By default, explosion does no damage.\n" +
@@ -349,6 +350,29 @@ public class LethalUpgradesBase : BaseUnityPlugin
                 reroll = true;
 
                 return "Acquired legendary utility upgrade!\nRe-rolls are active.\n";                
+            }, Category = "Other"
+        });
+
+        AddCommand("upgrade token movement", new CommandInfo()
+        {
+            DisplayTextSupplier = () =>
+            {
+                if(movement_leg)
+                {
+                    return "You already have the legendary movement upgrade!\n";
+                }
+
+                if(tokens <= 0)
+                {
+                    return "You need a token to buy the legendary movement upgrade.\n";
+                }
+
+                tokens -= 1;
+                LethalUpgradesNetwork.tokens.Value = tokens;
+                LethalUpgradesNetwork.movement_leg.Value = true;
+                movement_leg = true;
+
+                return "Acquired legendary movement upgrade!\n";                
             }, Category = "Other"
         });
         #endregion

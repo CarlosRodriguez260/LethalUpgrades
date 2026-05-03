@@ -7,6 +7,9 @@ using BepInEx.Logging;
 using GameNetcodeStuff;
 using HarmonyLib;
 using UnityEngine;
+using System.Collections;
+using TMPro;
+using System.Diagnostics.CodeAnalysis;
 
 namespace LethalUpgrades.Patches;
 internal class MovementPatching
@@ -34,7 +37,7 @@ internal class MovementPatching
     #endregion 
 
     #region Movement Tier 2
-    internal static float movement_t2 = 4.6f * 1.10f;
+    internal static float movement_t2 = 4.6f * 1.10f; // 4.6 is normal, in-game movement speed
     [HarmonyPatch(typeof(PlayerControllerB), "Update")]
     [HarmonyPostfix]
     static void MovementTier2(PlayerControllerB __instance)
@@ -42,26 +45,116 @@ internal class MovementPatching
         if (__instance == null) return;
         if (__instance != GameNetworkManager.Instance?.localPlayerController) return;
 
-        if (LethalUpgradesBase.movement_t2)
+        if(LethalUpgradesBase.movement_t2)
         {
             __instance.movementSpeed = movement_t2;
         }
     }
     #endregion
 
-    #region movement Tier 3
+    #region Movement Tier 3
     internal static float movement_t3 = 13f * 1.25f;
     [HarmonyPatch(typeof(PlayerControllerB), "Update")]
     [HarmonyPostfix]
     static void MovementTier3(PlayerControllerB __instance)
     {
-        if (__instance == null) return;
-        if (__instance != GameNetworkManager.Instance?.localPlayerController) return;
+        if(__instance == null) return;
+        if(__instance != GameNetworkManager.Instance?.localPlayerController) return;
 
-        if (LethalUpgradesBase.movement_t3)
+        // For temp testing of legendary
+        // if(ninja)
+        // {
+        //     __instance.health = 15;
+        // }
+        // REMOVE WHEN DONE
+
+        if(LethalUpgradesBase.movement_t3)
         {
             __instance.jumpForce = movement_t3;
         }
+    }
+    #endregion
+
+    #region Movement Legendary
+    internal static bool ninja;
+    internal static bool ninja_cooldown;
+    [HarmonyPatch(typeof(EnemyAI), "PlayerIsTargetable")]
+    [HarmonyPostfix]
+    static void Invulnerability(EnemyAI __instance, ref PlayerControllerB playerScript, ref bool __result)
+    {
+        if(!LethalUpgradesBase.movement_leg) return;
+
+        if(!ninja) return;
+
+        if(playerScript.health < 20)
+        {
+            __result = false;
+            // LethalUpgradesBase.mls.LogInfo($"Removed player from {__instance.enemyType} targeting.");
+        }
+    }
+
+    [HarmonyPatch(typeof(PlayerControllerB), "DamagePlayer")]
+    [HarmonyPrefix]
+    static void MovementLeg0(PlayerControllerB __instance, ref int damageNumber)
+    {
+        if(!LethalUpgradesBase.movement_leg) return;
+
+        if(__instance.health - damageNumber < 20)
+        {
+            if(!ninja && !ninja_cooldown)
+            {
+                ninja = true;
+                damageNumber = 0;
+                __instance.health = 5;
+                HUDManager.Instance.DisplayTip("Old War Stealthkit", "You are phasing in and out of reality...");
+                LethalUpgradesBase.mls.LogInfo($"Ninja on!");
+            }
+            if(LethalUpgradesBase.movement_t2){__instance.movementSpeed = 4.6f * 1.10f * 1.5f;}
+            else{__instance.movementSpeed = 4.6f * 1.5f;}
+            LethalUpgradesBase.mls.LogInfo($"Critical Movement speed = {__instance.movementSpeed}");
+        }
+    }
+
+    [HarmonyPatch(typeof(PlayerControllerB), "MakeCriticallyInjured")]
+    [HarmonyPostfix]
+    static void MovementLeg1(PlayerControllerB __instance)
+    {
+        if(!LethalUpgradesBase.movement_leg) return;
+
+        if(!__instance.criticallyInjured || !(__instance.health < 20))
+        {
+            if(ninja)
+            {
+                ninja_cooldown = true;
+                ninja = false;
+                LethalUpgradesBase.mls.LogInfo($"Ninja off!");
+                Cooldown();
+            }
+            if(LethalUpgradesBase.movement_t2){__instance.movementSpeed = 4.6f * 1.10f;}
+            else{__instance.movementSpeed = 4.6f;}
+            LethalUpgradesBase.mls.LogInfo($"Non-Critical Movement speed = {__instance.movementSpeed}");
+        }
+    }
+
+    static async Task Cooldown()
+    {
+        int time = 0;
+        var player = GameNetworkManager.Instance.localPlayerController;
+        LethalUpgradesBase.mls.LogInfo($"Ninja cooldown counting down...");
+        while(time < 120)
+        {
+            if(player.isPlayerDead || player.disconnectedMidGame)
+            {
+                if(LethalUpgradesBase.movement_t2){player.movementSpeed = 4.6f * 1.10f;}
+                else{player.movementSpeed = 4.6f;}
+                LethalUpgradesBase.mls.LogInfo($"Cooldown interrupted.");
+                break;
+            }
+            time += 1;
+            await Task.Delay(1000);
+        }
+        ninja_cooldown = false;
+        LethalUpgradesBase.mls.LogInfo($"Ninja cooldown completed!");
     }
     #endregion 
 }

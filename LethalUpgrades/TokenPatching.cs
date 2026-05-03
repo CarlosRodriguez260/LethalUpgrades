@@ -18,6 +18,9 @@ internal class TokenPatching
     [HarmonyPostfix]
     static void UpdateTokenMeter(HUDManager __instance)
     {
+        // Token Meter is host only
+        if(!LNetworkUtils.IsHostOrServer) return;
+        
         var letter_grade = __instance.statsUIElements.gradeLetter.text;
         LethalUpgradesBase.mls.LogInfo($"Grade: {letter_grade}");
         switch (letter_grade)
