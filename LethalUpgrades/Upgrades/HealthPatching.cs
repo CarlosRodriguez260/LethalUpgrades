@@ -215,8 +215,6 @@ internal class HealthPatching
     [HarmonyPostfix]
     static void StopAllHealCoroutines()
     {
-        LethalUpgradesBase.mls.LogInfo("Stopping all heal coroutines");
-        
         var localPlayer = GameNetworkManager.Instance?.localPlayerController;
         if (localPlayer != null)
         {

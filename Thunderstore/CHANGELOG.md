@@ -1,4 +1,11 @@
 # Releases
+## Version Release 1.3.8
+
+- Added rotational modifier store.
+- Added first 6 modifiers:
+    + 3 Easy
+    + 2 Medium
+    + 1 Hard
 
 ## Version Release 1.3.5
 

@@ -1,18 +1,14 @@
 ﻿using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
-using LethalUpgrades.Patches;
-using TerminalApi;
 using TerminalApi.Classes;
 using static TerminalApi.TerminalApi;
 using LethalModDataLib.Attributes;
 using LethalNetworkAPI;
-using System.ComponentModel;
 using LethalNetworkAPI.Utils;
-using System.Numerics;
-using UnityEngine.UI;
-using System.Diagnostics.Tracing;
-using DigitalRuby.ThunderAndLightning;
+using LethalUpgrades.Patches;
+using LethalUpgrades.Store;
+
 
 
 
@@ -125,14 +121,16 @@ public class LethalUpgradesBase : BaseUnityPlugin
         harmony.PatchAll(typeof(HealthPatching));
         harmony.PatchAll(typeof(StaminaPatching));
         harmony.PatchAll(typeof(MovementPatching));
-        harmony.PatchAll(typeof(DebugPatching)); //Uncomment to have logs in BepInEx console
+        // harmony.PatchAll(typeof(DebugPatching)); //Uncomment to have logs in BepInEx console
         harmony.PatchAll(typeof(TokenPatching));
         harmony.PatchAll(typeof(HostClientPatching));
         harmony.PatchAll(typeof(UtilityPatching));
+        harmony.PatchAll(typeof(RotationalStore));
         ConfigManager = new ConfigurationController(Config);
 
         LethalUpgradesNetwork.Initiate();
         LethalUpgradesNetwork.InitializeNetworkCallbacks();
+        RotationalStore.StoreSetup();
 
         AddCommand("upgrade", new CommandInfo()
         {
@@ -148,7 +146,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
 
                             "Each category has 3 tiers with differing costs, providing a plethora of different changes.\n" +
                             "A special token can be acquired by proving your loot-gathering and survival skills, which can be turned in for free legendary upgrades!\n\n" +
-                            
+
                             "NOTE: Upgrades that cost money scale with amount of players present.\n\n" +
                             "To see information about each upgrade, type 'upgrade [UPGRADE] info'\n\n" +
                             "To buy an upgrade, type 'upgrade [UPGRADE] [TIER]'\n\n" +
@@ -158,37 +156,37 @@ public class LethalUpgradesBase : BaseUnityPlugin
                 return text;
             }, Category = "Help",
             Description = "Brief overview of upgrades employees can acquire."
-        });    
+        });
 
         AddCommand("upgrade token",
         "Special tokens, denoted by Ŧ, are utilized to obtain legendary upgrades from each tier. " +
         "Unlike normal upgrades, you can use a token to buy any of the available legendary ones.\n\n" +
         "These tokens can only be acquired via good, cummulative performances on moons. Good luck!\n");
-        
+
         AddCommand("upgrade health info",
         "These upgrades affect your health. They consist of the following:\n" +
-        "- Tier 1: Gain +20 additional health. Cost: $200\n" + 
-        "- Tier 2: Reduce all incoming damage by 10%. Cost: $300\n" + 
-        "- Tier 3: Gain +30 additional health. Cost: $400\n" + 
-        "- Legendary: Gain an adaptive regeneration ability.\n\n" + 
+        "- Tier 1: Gain +20 additional health. Cost: $200\n" +
+        "- Tier 2: Reduce all incoming damage by 10%. Cost: $300\n" +
+        "- Tier 3: Gain +30 additional health. Cost: $400\n" +
+        "- Legendary: Gain an adaptive regeneration ability.\n\n" +
         "NOTE: Health-increasing upgrades only apply while in orbit.\n");
 
         AddCommand("upgrade stamina info",
         "These upgrades affect your stamina. They consist of the following:\n" +
-        "- Tier 1: Decrease running stamina usage. Cost: $300\n" + 
-        "- Tier 2: Improve stamina regen by 10%. Cost: $400\n" + 
+        "- Tier 1: Decrease running stamina usage. Cost: $300\n" +
+        "- Tier 2: Improve stamina regen by 10%. Cost: $400\n" +
         "- Tier 3: Reduced stamina penalties when heavy (>=50 lbs). Cost: $500\n" +
         "- Legendary: When damaged, regardless of amount or source, gain full stamina back.\n");
 
         AddCommand("upgrade movement info",
         "These upgrades affect your movement. They consist of the following:\n" +
-        "- Tier 1: Sprint 6% faster. Cost: $250\n" + 
-        "- Tier 2: Walk/Crouch 10% faster. Cost: $350\n" + 
-        "- Tier 3: Jump height increased by 25%. Cost: $400\n" + 
+        "- Tier 1: Sprint 6% faster. Cost: $250\n" +
+        "- Tier 2: Walk/Crouch 10% faster. Cost: $350\n" +
+        "- Tier 3: Jump height increased by 25%. Cost: $400\n" +
         "- Legendary: While critically injured, always gain more movement speed. Become intangible as well, but goes on cooldown for 120 seconds.\n");
 
         AddCommand("upgrade utility info",
-        "These upgrades affect your equipment or utilities. They consist of the following:\n" + 
+        "These upgrades affect your equipment or utilities. They consist of the following:\n" +
         "- Tier 1: Increase flashlight battery capacities by 10%. Cost: $250\n" +
         "- Tier 2: Shovel deals double damage, visually explodes and allows you to shovel jump. Cost: $350\n" + //Done
         "   + By default, explosion does no damage.\n" +
@@ -209,7 +207,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
         //         return "Gave you 500 moneys for testing.\n";
         //     },
         // });
-        
+
         // AddCommand("give token", new CommandInfo()
         // {
         //     DisplayTextSupplier = () =>
@@ -226,7 +224,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
                 show_explosion = !show_explosion;
                 shovel_jump = false;
 
-                return $"Shovel Explosion set to: {show_explosion}.\n";                
+                return $"Shovel Explosion set to: {show_explosion}.\n";
             }, Category = "Other"
         });
 
@@ -241,7 +239,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
 
                 shovel_jump = !shovel_jump;
 
-                return $"Shovel Jump set to: {shovel_jump}.\n";                
+                return $"Shovel Jump set to: {shovel_jump}.\n";
             }, Category = "Other"
         });
 
@@ -301,7 +299,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
                 LethalUpgradesNetwork.health_leg.Value = true;
                 health_leg = true;
 
-                return "Acquired legendary health upgrade!\n";                
+                return "Acquired legendary health upgrade!\n";
             }, Category = "Other"
         });
 
@@ -324,7 +322,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
                 LethalUpgradesNetwork.stamina_leg.Value = true;
                 stamina_leg = true;
 
-                return "Acquired legendary stamina upgrade!\n";                
+                return "Acquired legendary stamina upgrade!\n";
             }, Category = "Other"
         });
 
@@ -349,7 +347,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
                 LethalUpgradesNetwork.reroll.Value = true;
                 reroll = true;
 
-                return "Acquired legendary utility upgrade!\nRe-rolls are active.\n";                
+                return "Acquired legendary utility upgrade!\nRe-rolls are active.\n";
             }, Category = "Other"
         });
 
@@ -372,7 +370,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
                 LethalUpgradesNetwork.movement_leg.Value = true;
                 movement_leg = true;
 
-                return "Acquired legendary movement upgrade!\n";                
+                return "Acquired legendary movement upgrade!\n";
             }, Category = "Other"
         });
         #endregion
@@ -380,7 +378,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
         #region Health Upgrades
         AddCommand("upgrade health 1", new CommandInfo()
         {
-            
+
             DisplayTextSupplier = () =>
             {
                 if(health_t1)
@@ -466,7 +464,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
         #region Stamina Upgrades
         AddCommand("upgrade stamina 1", new CommandInfo()
         {
-            
+
             DisplayTextSupplier = () =>
             {
                 if(stamina_t1)
@@ -552,7 +550,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
         #region Movement Upgrades
         AddCommand("upgrade movement 1", new CommandInfo()
         {
-            
+
             DisplayTextSupplier = () =>
             {
                 if(movement_t1)
@@ -638,7 +636,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
         #region Utility Upgrades
         AddCommand("upgrade utility 1", new CommandInfo()
         {
-            
+
             DisplayTextSupplier = () =>
             {
                 if(utility_t1)
@@ -754,7 +752,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
                 int random_index = rand.Next(weather_names.Length);
                 LevelWeatherType new_weather = weather_names[random_index];
                 moon.currentWeather = new_weather;
-                
+
                 var terminal = ActiveTerminal();
                 var credits = terminal.groupCredits;
                 sor.ChangeLevelServerRpc(moon.levelID, newGroupCreditsAmount: credits);
@@ -822,6 +820,19 @@ public class LethalUpgradesNetwork
     public static LNetworkVariable<UnityEngine.Vector3> shovel_explosion_pos;
     public static bool syncing = false;
 
+    // Rotational Store Network Variables
+    public static LNetworkVariable<bool> mod1;
+    public static LNetworkVariable<bool> mod2;
+    public static LNetworkVariable<bool> mod3;
+    public static LNetworkVariable<bool> mod4;
+    public static LNetworkVariable<bool> mod5;
+    public static LNetworkVariable<bool> mod6;
+
+
+    public static LNetworkVariable<(int, int, int)> easy_indexes;
+    public static LNetworkVariable<(int, int)> medium_indexes;
+    public static LNetworkVariable<int> hard_index;
+
     public static void Initiate()
     {
         syncer = LNetworkEvent.Connect("ChuitosLethalUpgrades_syncer", onServerReceived: OnClientJoinedRequest);
@@ -847,12 +858,23 @@ public class LethalUpgradesNetwork
         tokens = LNetworkVariable<int>.Connect("ChuitosLethalUpgrades_tokens", 0);
         token_meter = LNetworkVariable<int>.Connect("ChuitosLethalUpgrades_token_meter", 0);
         client_credits = LNetworkVariable<int>.Connect("ChuitosLethalUpgrades_client_credits", 0);
+
+        easy_indexes = LNetworkVariable<(int, int, int)>.Connect("ChuitosLethalUpgrades_easy_indexes", RotationalStore.easy_indexes);
+        medium_indexes = LNetworkVariable<(int, int)>.Connect("ChuitosLethalUpgrades_medium_indexes", RotationalStore.medium_indexes);
+        hard_index = LNetworkVariable<int>.Connect("ChuitosLethalUpgrades_hard_index", RotationalStore.hard_index);
+
+        mod1 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_mod1", false);
+        mod2 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_mod2", false);
+        mod3 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_mod3", false);
+        mod4 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_mod4", false);
+        mod5 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_mod5", false);
+        mod6 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_mod6", false);
     }
 
     private static void OnClientJoinedRequest(ulong clientId)
     {
         LethalUpgradesBase.mls.LogInfo($"Client {clientId} requested sync, sending current upgrade states...");
-        
+
         bool[] local_bool_arr = [
             LethalUpgradesBase.health_t1,
             LethalUpgradesBase.health_t2,
@@ -870,7 +892,7 @@ public class LethalUpgradesNetwork
             LethalUpgradesBase.utility_t2,
             LethalUpgradesBase.utility_t3,
             LethalUpgradesBase.utility_leg,
-            LethalUpgradesBase.reroll
+            LethalUpgradesBase.reroll,
         ];
 
         LNetworkVariable<bool>[] net_bool_arr = [
@@ -916,6 +938,96 @@ public class LethalUpgradesNetwork
             tokens.Value = old_tokens;
         }
 
+        var old_easy_indexes = RotationalStore.easy_indexes;
+        easy_indexes.Value = (-2, -2, -2);
+        easy_indexes.Value = old_easy_indexes;
+
+        var old_medium_indexes = RotationalStore.medium_indexes;
+        medium_indexes.Value = (-2, -2);
+        medium_indexes.Value = old_medium_indexes;
+
+        var old_hard_index = RotationalStore.hard_index;
+        hard_index.Value = -2;
+        hard_index.Value = old_hard_index;
+
+        if(RotationalStore.easy_mods[0].active)
+        {
+            if(mod1.Value != true)
+            {
+                mod1.Value = true;
+            }
+            else
+            {
+                mod1.Value = false;
+                mod1.Value = true;
+            }
+        }
+
+        if(RotationalStore.easy_mods[1].active)
+        {
+            if(mod2.Value != true)
+            {
+                mod2.Value = true;
+            }
+            else
+            {
+                mod2.Value = false;
+                mod2.Value = true;
+            }
+        }
+
+        if(RotationalStore.easy_mods[2].active)
+        {
+            if(mod3.Value != true)
+            {
+                mod3.Value = true;
+            }
+            else
+            {
+                mod3.Value = false;
+                mod3.Value = true;
+            }
+        }
+
+        if(RotationalStore.medium_mods[0].active)
+        {
+            if(mod4.Value != true)
+            {
+                mod4.Value = true;
+            }
+            else
+            {
+                mod4.Value = false;
+                mod4.Value = true;
+            }
+        }
+
+        if(RotationalStore.medium_mods[1].active)
+        {
+            if(mod5.Value != true)
+            {
+                mod5.Value = true;
+            }
+            else
+            {
+                mod5.Value = false;
+                mod5.Value = true;
+            }
+        }
+
+        if(RotationalStore.hard_mods[0].active)
+        {
+            if(mod6.Value != true)
+            {
+                mod6.Value = true;
+            }
+            else
+            {
+                mod6.Value = false;
+                mod6.Value = true;
+            }
+        }
+
         LethalUpgradesBase.mls.LogInfo($"Sync sent for client {clientId} - Tokens: {LethalUpgradesBase.tokens}");
     }
 
@@ -933,7 +1045,7 @@ public class LethalUpgradesNetwork
         var sor = UnityEngine.Object.FindFirstObjectByType<StartOfRound>();
         var moon = sor.currentLevel;
         moon.currentWeather = weatherCredits.new_weather;
-        
+
         sor.ChangeLevelServerRpc(moon.levelID, newGroupCreditsAmount: weatherCredits.credits);
     }
 
@@ -942,7 +1054,7 @@ public class LethalUpgradesNetwork
         var sor = UnityEngine.Object.FindFirstObjectByType<StartOfRound>();
         var moon = sor.currentLevel;
         moon.currentWeather = weatherCredits.new_weather;
-        
+
         sor.ChangeLevelServerRpc(moon.levelID, newGroupCreditsAmount: weatherCredits.credits);
     }
 
@@ -1070,7 +1182,7 @@ public class LethalUpgradesNetwork
                     LethalUpgradesBase.SyncTerminals(client_credits.Value);
                 }
             };
-            
+
             shovel_explosion_pos.OnValueChanged += (oldValue, newValue) =>
             {
                 var sor = UnityEngine.Object.FindFirstObjectByType<StartOfRound>();
@@ -1091,6 +1203,63 @@ public class LethalUpgradesNetwork
                     LethalUpgradesBase.mls.LogInfo("Explosion spawned!");
                 }
             };
+
+            easy_indexes.OnValueChanged += (OldValue, newValue) =>
+            {
+              RotationalStore.easy_indexes = newValue;
+            };
+
+            medium_indexes.OnValueChanged += (OldValue, newValue) =>
+            {
+              RotationalStore.medium_indexes = newValue;
+            };
+
+            hard_index.OnValueChanged += (OldValue, newValue) =>
+            {
+              RotationalStore.hard_index = newValue;
+            };
+
+            mod1.OnValueChanged += (OldValue, newValue) =>
+            {
+                RotationalStore.easy_mods[0].active = newValue;
+                RotationalStore.EasyModCallbacks(RotationalStore.easy_mods[0]);
+                LethalUpgradesBase.mls.LogInfo($"Activated mod 1 with new value of {newValue}");
+            };
+
+            mod2.OnValueChanged += (OldValue, newValue) =>
+            {
+                RotationalStore.easy_mods[1].active = newValue;
+                RotationalStore.EasyModCallbacks(RotationalStore.easy_mods[1]);
+                LethalUpgradesBase.mls.LogInfo($"Activated mod 2 with new value of {newValue}");
+            };
+
+            mod3.OnValueChanged += (OldValue, newValue) =>
+            {
+                RotationalStore.easy_mods[2].active = newValue;
+                RotationalStore.EasyModCallbacks(RotationalStore.easy_mods[2]);
+                LethalUpgradesBase.mls.LogInfo($"Activated mod 3 with new value of {newValue}");
+            };
+
+            mod4.OnValueChanged += (OldValue, newValue) =>
+            {
+                RotationalStore.medium_mods[0].active = newValue;
+                RotationalStore.MediumModCallbacks(RotationalStore.medium_mods[0]);
+                LethalUpgradesBase.mls.LogInfo($"Activated mod 4 with new value of {newValue}");
+            };
+
+            mod5.OnValueChanged += (OldValue, newValue) =>
+            {
+                RotationalStore.medium_mods[1].active = newValue;
+                RotationalStore.MediumModCallbacks(RotationalStore.medium_mods[1]);
+                LethalUpgradesBase.mls.LogInfo($"Activated mod 5 with new value of {newValue}");
+            };
+
+            mod6.OnValueChanged += (OldValue, newValue) =>
+            {
+                RotationalStore.hard_mods[0].active = newValue;
+                // Host prioritizes spawns, but clients can still see power level
+                RotationalStore.HardModCallbacks(RotationalStore.hard_mods[0]);
+            };
         }
     }
 }
@@ -1102,12 +1271,12 @@ public class LethalUpgradesNetwork
 /// IF UPGRADE IS BOUGHT AND SOMEONE JOINS LATER, ITS DESYNCED
 /// FIND A WAY TO FIX THIS. TRY AND ALWAYS MAKE NEW PEOPLE SYNC TO HOST WHEN THEY JOIN.
 /// HOST ALWAYS HAS UPDATED VALUES.
-/// 
+///
 /// STATUS: FIXED
 /// ----------------------------------------------
 /// ISSUE #2:
 /// TERMINAL CREDITS CAN DESYNC WHEN ANY PLAYER BUYS UPGRADE
-/// 
+///
 /// STATUS: FIXED
 #endregion
 
@@ -1115,7 +1284,7 @@ public class LethalUpgradesNetwork
 /// BUG #1:
 /// IF YOU BUY AN UPGRADE BEFORE OR WHEN LANDED ON A MOON
 /// AND YOU SAVE SCUM, YOU KEEP UPGRADES BUT TERMINAL MONEY RESETS
-/// PRIOR TO HAVING THEM. 
-/// 
+/// PRIOR TO HAVING THEM.
+///
 /// STATUS: FIXED (?)
 #endregion

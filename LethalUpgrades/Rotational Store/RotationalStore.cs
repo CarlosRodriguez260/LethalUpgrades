@@ -1,0 +1,719 @@
+using TerminalApi.Classes;
+using static TerminalApi.TerminalApi;
+using LethalUpgrades;
+using HarmonyLib;
+using LethalNetworkAPI.Utils;
+using UnityEngine;
+using UnityEngine.AI;
+using System.Net.WebSockets;
+
+namespace LethalUpgrades.Store;
+
+public class RotationalStore
+{
+    public static Modifier[] easy_mods = [
+        new Modifier(1, false, "Shiny but Swifty", "Easy", "Spawnable scrap becomes 7% more valuable, but enemies move 7% faster.", []),
+        new Modifier(2, false, "More Risk, More Reward", "Easy", "Increase spawnable scrap by 2, but add 2 indoor and outdoor power.", []),
+        new Modifier(3, false, "Risk of Rain", "Easy", "Remove 2 indoor and outdoor power, but increase meteor shower event chance by 10%.", [])
+    ];
+    public static Modifier[] medium_mods = [
+        new Modifier(4, false, "Miller's Moon", "Medium", "Spawnable scrap becomes 20% more valuable, but time moves 25% faster.", []),
+        new Modifier(5, false, "Mothron's Dawn", "Medium", "Spawnable scrap becomes 15% more valuable and spawns 3 more scrap, but weather becomes eclipsed and indoor/outdoor power increases by 2.\nIf already eclipsed, reap the benefits!", []),
+    ];
+    public static Modifier[] hard_mods = [
+        new Modifier(6, false, "Go Play Outside!", "Hard", "Removes all indoor power of the moon, but adds it to outdoor power.", [])
+    ];
+    
+    public static (int easy_ind1, int easy_ind2, int easy_ind3) easy_indexes = (-1, -1, -1); // -1 = Not Seeded
+    public static (int medium_ind1, int medium_ind2) medium_indexes = (-1, -1);
+    public static int hard_index = -1;
+    public static void StoreSetup()
+    {
+        #region Store Commands
+        LethalUpgradesBase.mls.LogInfo("Store is awake!");
+
+        TerminalNode store_node = CreateTerminalNode("WELCOME TO THE ROTATIONAL MODIFIER STORE!\n\nPlease make sure to look at the available modifiers before making a choice!\n", clearPreviousText: true);
+        TerminalKeyword store_keyword = CreateTerminalKeyword("rot store", isVerb: false, store_node);
+        AddTerminalKeyword(store_keyword ,new CommandInfo()
+        {
+            Category = "Help", Description = "Look at the rotational modifier store!"
+        });
+
+        TerminalNode easy_node = CreateTerminalNode("EASY MODIFIERS\n\n", clearPreviousText: true);
+        TerminalKeyword easy = CreateTerminalKeyword("Tier 1 Mod", isVerb: false, easy_node);
+        AddTerminalKeyword(easy, new CommandInfo()
+        {
+            TriggerNode = easy_node,
+            DisplayTextSupplier = () =>
+            {
+                Modifier easy_mod = easy_mods[easy_indexes.easy_ind1];
+                string mod1 = $"Title: {easy_mod.mod_title}\n" +
+                $"Difficulty: {easy_mod.difficulty}\n" +
+                $"Description: {easy_mod.description}\n" +
+                $"Type '{easy_mod.difficulty} 1' to activate.\n" +
+                $"Active: {(!easy_mod.active ? "No" : "Yes")}\n\n";
+
+                easy_mod = easy_mods[easy_indexes.easy_ind2];
+                string mod2 = $"Title: {easy_mod.mod_title}\n" +
+                $"Difficulty: {easy_mod.difficulty}\n" +
+                $"Description: {easy_mod.description}\n" +
+                $"Type '{easy_mod.difficulty} 2' to activate.\n" +
+                $"Active: {(!easy_mod.active ? "No" : "Yes")}\n\n";
+
+                easy_mod = easy_mods[easy_indexes.easy_ind3];
+                string mod3 = $"Title: {easy_mod.mod_title}\n" +
+                $"Difficulty: {easy_mod.difficulty}\n" +
+                $"Description: {easy_mod.description}\n" +
+                $"Type '{easy_mod.difficulty} 3' to activate.\n" +
+                $"Active: {(!easy_mod.active ? "No" : "Yes")}\n\n";
+
+                return mod1 + mod2 + mod3;
+            }, Category = "rot store", Description = "Shows the list of available tier 1 modifiers"
+        });
+
+        TerminalNode medium_node = CreateTerminalNode("MEDIUM MODIFIERS\n\n", clearPreviousText: true);
+        TerminalKeyword medium = CreateTerminalKeyword("Tier 2 Mod", isVerb: false, medium_node);
+        AddTerminalKeyword(medium, new CommandInfo()
+        {
+            TriggerNode = medium_node,
+            DisplayTextSupplier = () =>
+            {
+                Modifier medium_mod = medium_mods[medium_indexes.medium_ind1];
+                string mod1 = $"Title: {medium_mod.mod_title}\n" +
+                $"Difficulty: {medium_mod.difficulty}\n" +
+                $"Description: {medium_mod.description}\n" +
+                $"Type '{medium_mod.difficulty} 1' to activate.\n" +
+                $"Active: {(!medium_mod.active ? "No" : "Yes")}\n\n";
+
+                medium_mod = medium_mods[medium_indexes.medium_ind2];
+                string mod2 = $"Title: {medium_mod.mod_title}\n" +
+                $"Difficulty: {medium_mod.difficulty}\n" +
+                $"Description: {medium_mod.description}\n" +
+                $"Type '{medium_mod.difficulty} 2' to activate.\n" +
+                $"Active: {(!medium_mod.active ? "No" : "Yes")}\n\n";
+
+                return mod1 + mod2;
+            }, Category = "rot store", Description = "Shows the list of available tier 2 modifiers"
+        });
+
+        TerminalNode hard_node = CreateTerminalNode("HARD MODIFIERS\n\n", clearPreviousText: true);
+        TerminalKeyword hard = CreateTerminalKeyword("Tier 3 Mod", isVerb: false, hard_node);
+        AddTerminalKeyword(hard, new CommandInfo()
+        {
+            TriggerNode = hard_node,
+            DisplayTextSupplier = () =>
+            {
+                Modifier hard_mod = hard_mods[hard_index];
+                string mod1 = $"Title: {hard_mod.mod_title}\n" +
+                $"Difficulty: {hard_mod.difficulty}\n" +
+                $"Description: {hard_mod.description}\n" +
+                $"Type '{hard_mod.difficulty}' to activate.\n" +
+                $"Active: {(!hard_mod.active ? "No" : "Yes")}\n\n";
+                return mod1;
+            }, Category = "rot store", Description = "Shows the available tier 3 modifier"
+        });
+
+        LethalUpgradesBase.mls.LogInfo("Added base rotational store commands!");
+
+        AddCommand("Easy 1", new CommandInfo()
+        {
+            
+            DisplayTextSupplier = () =>
+            {
+                var easy_mod1 = easy_mods[easy_indexes.easy_ind1];
+                if(easy_mod1.active) return "Easy modifier 1 is already active!\n";
+
+                var sor = StartOfRound.Instance;
+                if(!sor.inShipPhase)
+                {
+                    return "You can only activate modifiers in orbit!\n";
+                }
+
+                var terminal = LethalUpgradesBase.ActiveTerminal();
+                if(terminal.currentNode!=easy_node)
+                {
+                    return "Cannot select easy modifiers here!\n";
+                }
+
+                EasyModChanger(easy_mod1);
+                
+                return "Selected easy modifier 1.\n";
+            }, Category = "Tier 1 Mod"
+        });
+
+        AddCommand("Easy 2", new CommandInfo()
+        {
+            
+            DisplayTextSupplier = () =>
+            {
+                var easy_mod2 = easy_mods[easy_indexes.easy_ind2];
+                if(easy_mod2.active) return "Easy modifier 2 is already active!\n";
+
+                var sor = StartOfRound.Instance;
+                if(!sor.inShipPhase)
+                {
+                    return "You can only activate modifiers in orbit!\n";
+                }
+
+                var terminal = LethalUpgradesBase.ActiveTerminal();
+                if(terminal.currentNode!=easy_node)
+                {
+                    return "Cannot select easy modifiers here!\n";
+                }
+
+                EasyModChanger(easy_mod2);
+
+                return "Selected easy modifier 2.\n";
+            }, Category = "Tier 1 Mod"
+        });
+
+        AddCommand("Easy 3", new CommandInfo()
+        {
+            
+            DisplayTextSupplier = () =>
+            {
+                var easy_mod3 = easy_mods[easy_indexes.easy_ind3];
+                if(easy_mod3.active) return "Easy modifier 3 is already active!";
+
+                var sor = StartOfRound.Instance;
+                if(!sor.inShipPhase)
+                {
+                    return "You can only activate modifiers in orbit!\n";
+                }
+
+                var terminal = LethalUpgradesBase.ActiveTerminal();
+                if(terminal.currentNode!=easy_node)
+                {
+                    return "Cannot select easy modifiers here!\n";
+                }
+
+                EasyModChanger(easy_mod3);
+                
+                return "Selected easy modifier 3.\n";
+            }, Category = "Tier 1 Mod"
+        });
+
+        AddCommand("Medium 1", new CommandInfo()
+        {
+            
+            DisplayTextSupplier = () =>
+            {
+                var medium_mod1 = medium_mods[medium_indexes.medium_ind1];
+                if(medium_mod1.active) return "Medium modifier 1 is already active!\n";
+
+                var sor = StartOfRound.Instance;
+                if(!sor.inShipPhase)
+                {
+                    return "You can only activate modifiers in orbit!\n";
+                }
+
+                var terminal = LethalUpgradesBase.ActiveTerminal();
+                if(terminal.currentNode!=medium_node)
+                {
+                    return "Cannot select medium modifiers here!\n";
+                }
+
+                MediumModChanger(medium_mod1);
+                
+                return "Selected medium modifier 1.\n";
+            }, Category = "Tier 2 Mod"
+        });
+
+        AddCommand("Medium 2", new CommandInfo()
+        {
+            
+            DisplayTextSupplier = () =>
+            {
+                var medium_mod2 = medium_mods[medium_indexes.medium_ind2];
+                if(medium_mod2.active) return "Medium modifier 2 is already active!\n";
+
+                var sor = StartOfRound.Instance;
+                if(!sor.inShipPhase)
+                {
+                    return "You can only activate modifiers in orbit!\n";
+                }
+
+                var terminal = LethalUpgradesBase.ActiveTerminal();
+                if(terminal.currentNode!=medium_node)
+                {
+                    return "Cannot select medium modifiers here!\n";
+                }
+
+                MediumModChanger(medium_mod2);
+                
+                return "Selected medium modifier 2.\n";
+            }, Category = "Tier 2 Mod"
+        });
+
+        AddCommand("Hard", new CommandInfo()
+        {
+            
+            DisplayTextSupplier = () =>
+            {
+                var hard_mod = hard_mods[hard_index];
+                if(hard_mod.active) return "Hard modifier is already active!";
+
+                var sor = StartOfRound.Instance;
+                if(!sor.inShipPhase)
+                {
+                    return "You can only activate modifiers in orbit!\n";
+                }
+
+                var terminal = LethalUpgradesBase.ActiveTerminal();
+                if(terminal.currentNode!=hard_node)
+                {
+                    return "Cannot select hard modifiers here!\n";
+                }
+
+                HardModChanger(hard_mod);
+                
+                return "Selected hard modifier. Good luck.\n";
+            }, Category = "Tier 3 Mod"
+        });
+        #endregion
+    }
+
+    #region Easy Mods
+    static void EasyModChanger(Modifier mod)
+    {
+        switch(mod.mod_id)
+        {
+            case 1:
+                easy_mods[0].active = true;
+                LethalUpgradesNetwork.mod1.Value = true;
+                break;
+            case 2:
+                easy_mods[1].active = true;
+                LethalUpgradesNetwork.mod2.Value = true;
+                break;
+            case 3:
+                easy_mods[2].active = true;
+                LethalUpgradesNetwork.mod3.Value = true;
+                break;
+        }
+    }
+
+    public static async Task EasyModCallbacks(Modifier mod)
+    {
+        RoundManager rm;
+        switch(mod.mod_id)
+        {
+            case 1:
+                // Spawnable scrap becomes 5% more valuable, but enemies move 5% faster.
+                if(!LNetworkUtils.IsHostOrServer) return;
+
+                rm = RoundManager.Instance;
+                LethalUpgradesBase.mls.LogInfo($"Host has turned on mod 1");
+                if(rm.scrapValueMultiplier > 0.4f)
+                {
+                    rm.scrapValueMultiplier *= 1.07f;
+                }
+                else
+                {
+                    rm.scrapValueMultiplier = 0.4f * 1.07f;
+                }
+
+                while(mod.active)
+                {
+                    await Task.Delay(1000);
+                    // Speed changer is ModifySpeedAssignment()
+                }
+
+                rm.scrapValueMultiplier = 0.4f;
+                LethalUpgradesBase.mls.LogInfo("Host has turned off mod 1");
+                break;
+            case 2:
+                // Spawn 2 more scrap, but add 2 indoor and outdoor power
+                rm = RoundManager.Instance;
+                if (!LNetworkUtils.IsHostOrServer)
+                {
+                    rm.currentLevel.minScrap += 2;
+                    rm.currentLevel.maxScrap += 2;
+                }
+                rm.currentLevel.maxEnemyPowerCount += 2;
+                rm.currentLevel.maxOutsideEnemyPowerCount += 2;
+
+                while(mod.active)
+                {
+                    await Task.Delay(1000);
+                }
+
+                if(LNetworkUtils.IsHostOrServer)
+                {
+                    rm.currentLevel.minScrap -= 2;
+                    rm.currentLevel.maxScrap -= 2;
+                }
+                rm.currentLevel.maxEnemyPowerCount -= 2;
+                rm.currentLevel.maxOutsideEnemyPowerCount -= 2;
+                break;
+            case 3:
+                // Remove 2 indoor and outdoor power, but increase chance of meteor rain event
+                rm = RoundManager.Instance;
+                rm.currentLevel.maxEnemyPowerCount -= 2;
+                rm.currentLevel.maxOutsideEnemyPowerCount -= 2;
+
+                bool chance_overwriten = false;
+                TimeOfDay tod = TimeOfDay.Instance;
+                while(mod.active)
+                {
+                    if(LNetworkUtils.IsHostOrServer && !chance_overwriten)
+                    {
+                        tod = TimeOfDay.Instance;
+                        if(tod == null) continue;
+
+                        chance_overwriten = true;
+                        tod.overrideMeteorChance = 100;
+                    }
+                    await Task.Delay(1000);
+                }
+
+                tod.overrideMeteorChance = -1;
+                rm.currentLevel.maxEnemyPowerCount += 2;
+                rm.currentLevel.maxOutsideEnemyPowerCount += 2;
+                break;
+        }
+    }
+    #endregion
+
+    #region Medium Mods
+    static void MediumModChanger(Modifier mod)
+    {
+        switch(mod.mod_id)
+        {
+            case 4:
+                medium_mods[0].active = true;
+                LethalUpgradesNetwork.mod4.Value = true;
+                break;
+            case 5:
+                medium_mods[1].active = true;
+                LethalUpgradesNetwork.mod5.Value = true;
+                break;
+        }
+    }
+
+    public static async Task MediumModCallbacks(Modifier mod)
+    {
+        RoundManager rm;
+        switch(mod.mod_id)
+        {
+            case 4:
+                // Scrap becomes 20% more valuable, but time moves 25% faster
+                if(!LNetworkUtils.IsHostOrServer) return;
+
+                rm = RoundManager.Instance;
+                if(rm.scrapValueMultiplier > 0.4f)
+                {
+                    rm.scrapValueMultiplier *= 1.20f;
+                }
+                else
+                {
+                    rm.scrapValueMultiplier = 0.4f * 1.20f;
+                }
+
+                bool set_multiplier = false;
+                TimeOfDay tod = TimeOfDay.Instance;
+                while(mod.active)
+                {
+                    if(!set_multiplier)
+                    {
+                        tod = TimeOfDay.Instance;
+                        if(tod == null) continue;
+
+                        set_multiplier = true;
+                        tod.globalTimeSpeedMultiplier = 1.4f * 1.25f;
+                        // LethalUpgradesBase.mls.LogInfo("Applied time multiplier!");
+                    }
+                    await Task.Delay(1000);
+                }
+
+                tod.globalTimeSpeedMultiplier = 1.4f;
+                rm.scrapValueMultiplier = 0.4f;
+                break;
+            case 5:
+                // Spawnable scrap becomes 15% more valuable and spawns 3 more scrap, but weather becomes eclipsed and indoor/outdoor power increases by 2;
+                // If already eclipsed, keep it that way.
+                rm = RoundManager.Instance;
+
+                if(LNetworkUtils.IsHostOrServer)
+                {
+                    if(rm.scrapValueMultiplier > 0.4f)
+                    {
+                        rm.scrapValueMultiplier *= 1.15f;
+                    }
+                    else
+                    {
+                        rm.scrapValueMultiplier = 0.4f * 1.07f;
+                    }
+                    rm.currentLevel.minScrap += 3;
+                    rm.currentLevel.maxScrap += 3;
+                }
+
+                rm.currentLevel.maxEnemyPowerCount += 2;
+                rm.currentLevel.maxOutsideEnemyPowerCount += 2;
+                if(hard_mods[0].active)
+                {
+                    // Add the additional indoor power to outdoor
+                    rm.currentLevel.maxOutsideEnemyPowerCount += 2;
+                }
+                
+                var moon = rm.currentLevel;
+                if(moon.currentWeather != LevelWeatherType.Eclipsed)
+                {
+                    moon.currentWeather = LevelWeatherType.Eclipsed;
+
+                    var terminal = LethalUpgradesBase.ActiveTerminal();
+                    var credits = terminal.groupCredits;
+                    var sor = StartOfRound.Instance;
+                    sor.ChangeLevelServerRpc(moon.levelID, newGroupCreditsAmount: credits);
+
+                    MoonWeather weather_credits = new MoonWeather();
+                    weather_credits.new_weather = LevelWeatherType.Eclipsed;
+                    weather_credits.credits = credits;
+
+                    if(LNetworkUtils.IsHostOrServer)
+                    {
+                        LethalUpgradesNetwork.current_weather.SendClients(weather_credits);
+                    }
+                    else
+                    {
+                        LethalUpgradesNetwork.current_weather.SendClients(weather_credits);
+                        LethalUpgradesNetwork.current_weather.SendServer(weather_credits);
+                    }
+                }
+
+                while(mod.active)
+                {
+                    await Task.Delay(1000);
+                }
+
+                if(LNetworkUtils.IsHostOrServer)
+                {
+                    rm.scrapValueMultiplier = 0.4f;
+                    rm.currentLevel.minScrap -= 3;
+                    rm.currentLevel.maxScrap -= 3;
+                }
+                rm.currentLevel.maxEnemyPowerCount -= 2;
+                rm.currentLevel.maxOutsideEnemyPowerCount -= 2;
+                break;
+        }
+    }
+    #endregion
+
+    #region Hard Mods
+    static void HardModChanger(Modifier mod)
+    {
+        switch(mod.mod_id)
+        {
+            case 6:
+                hard_mods[0].active = true;
+                LethalUpgradesNetwork.mod6.Value = true;
+                break;
+        }
+    }
+
+    public static async Task HardModCallbacks(Modifier mod)
+    {
+        RoundManager rm;
+        switch(mod.mod_id)
+        {
+            case 6:
+                // Remove all indoor power, and move it to outdoor power
+                rm = RoundManager.Instance;
+                var inside_power = rm.currentLevel.maxEnemyPowerCount;
+                var outside_power = rm.currentLevel.maxOutsideEnemyPowerCount;
+                rm.currentLevel.maxOutsideEnemyPowerCount += inside_power;
+
+                while(mod.active)
+                {
+                    if(rm.currentMaxInsidePower != 0)
+                    {
+                        rm.currentMaxInsidePower = 0;
+                    }
+
+                    await Task.Delay(500);
+                    // Wait for mod to deactivate
+                }
+
+                rm.currentMaxInsidePower = inside_power;
+                rm.currentLevel.maxOutsideEnemyPowerCount = outside_power;
+                break;
+        }
+    }
+    #endregion
+
+    #region Additional Calls
+    static bool display_once = true;
+    [HarmonyPatch(typeof(StartOfRound), "Update")]
+    [HarmonyPostfix]
+    static void DisplayPower(StartOfRound __instance)
+    {
+        if(__instance.inShipPhase && !display_once)
+        {
+            display_once = true;
+            return;
+        }
+
+        if(!hard_mods[0].active && !easy_mods[1].active && !easy_mods[2].active) return;
+        if(!__instance.shipHasLanded) return;
+
+        var hud = HUDManager.Instance;
+        var rm = RoundManager.Instance;
+        
+        if(!display_once) return;
+
+        display_once = false;
+        hud.DisplayTip("Lethal Upgrades", $"Indoor Power: {rm.currentMaxInsidePower}\nOutdoor Power: {rm.currentLevel.maxOutsideEnemyPowerCount}");
+    }
+    static void ModifySpeedAssignment(ref float value)
+    {
+        if(!easy_mods[0].active) return;
+        
+        value *= 1.07f;
+        if(value >= 30f)
+        {
+            value = 30f;
+        }
+    }
+
+    [HarmonyPatch(typeof(StartOfRound), "ChangeLevel")]
+    [HarmonyPrefix]
+    static bool DisallowTravel(StartOfRound __instance, ref int levelID)
+    {
+        var hud = HUDManager.Instance;
+        foreach(Modifier mod in easy_mods)
+        {
+            if(mod.active && levelID != __instance.currentLevel.levelID)
+            {
+                hud.DisplayTip("Nuh uh uh!", "You are not allowed to switch moons once a modifier is active!", true);
+                LethalUpgradesBase.mls.LogInfo("Yarhihar, not today!");
+                return false;
+            }
+        }
+
+        foreach(Modifier mod in medium_mods)
+        {
+            if(mod.active && levelID != __instance.currentLevel.levelID)
+            {
+                hud.DisplayTip("Nuh uh uh!", "You are not allowed to switch moons once a modifier is active!", true);
+                return false;
+            }
+        }
+
+        foreach(Modifier mod in hard_mods)
+        {
+            if(mod.active && levelID != __instance.currentLevel.levelID)
+            {
+                hud.DisplayTip("Nuh uh uh!", "You are not allowed to switch moons once a modifier is active!", true);
+                return false;
+            }
+        }
+
+        // If no mods active or switching weather, allow travel
+        return true;
+    }
+    #endregion
+
+    #region Mod Seeder
+    [HarmonyPatch(typeof(StartOfRound), "Awake")]
+    [HarmonyPostfix]
+    static void SeedModifiers()
+    {
+        if(!LNetworkUtils.IsHostOrServer) return;
+
+        System.Random rand = new System.Random();
+        List<int> selected = new List<int>();
+        int random_index;
+        int count;
+
+        // Select 3 easy modifiers
+        count = 3;
+        while (count > 0)
+        {
+            random_index = rand.Next(easy_mods.Length);
+            if(selected.Contains(random_index))
+            {
+                continue;
+            }
+
+            selected.Add(random_index);
+            count--;
+        }
+        var easy_ind = (selected[0], selected[1], selected[2]);
+        easy_indexes = easy_ind;
+        LethalUpgradesNetwork.easy_indexes.Value = easy_ind;
+        selected.Clear();
+
+        // Select 2 medium modifiers
+        count = 2;
+        while (count > 0)
+        {
+            random_index = rand.Next(medium_mods.Length);
+            if(selected.Contains(random_index))
+            {
+                continue;
+            }
+
+            selected.Add(random_index);
+            count--;
+        }
+        var medium_ind = (selected[0], selected[1]);
+        medium_indexes = medium_ind;
+        LethalUpgradesNetwork.medium_indexes.Value = medium_ind;
+        selected.Clear();
+
+        // Select 1 hard modifier
+        random_index = rand.Next(hard_mods.Length);
+        hard_index = random_index;
+        LethalUpgradesNetwork.hard_index.Value = random_index;
+
+        LethalUpgradesBase.mls.LogInfo("Seeded first set of modifier events!");
+    }
+
+    [HarmonyPatch(typeof(HUDManager), "FillEndGameStats")]
+    [HarmonyPrefix]
+    static void ResetModifiers()
+    {
+        StopAllModifiers();
+        SeedModifiers();
+    }
+
+    [HarmonyPatch(typeof(GameNetworkManager), "Disconnect")]
+    [HarmonyPostfix]
+    static void StopAllModifiers()
+    {
+        easy_mods[easy_indexes.easy_ind1].active = false;
+        easy_mods[easy_indexes.easy_ind2].active = false;
+        easy_mods[easy_indexes.easy_ind3].active = false;
+        medium_mods[medium_indexes.medium_ind1].active = false;
+        medium_mods[medium_indexes.medium_ind2].active = false;
+        hard_mods[hard_index].active = false;
+
+        LethalUpgradesNetwork.mod1.Value = false;
+        LethalUpgradesNetwork.mod2.Value = false;
+        LethalUpgradesNetwork.mod3.Value = false;
+        LethalUpgradesNetwork.mod4.Value = false;
+        LethalUpgradesNetwork.mod5.Value = false;
+        LethalUpgradesNetwork.mod6.Value = false;
+    }
+}
+#endregion
+
+public class Modifier
+{
+    public int mod_id;
+    public bool active;
+    public string mod_title;
+    public string difficulty;
+    public string description;
+    public string[] on_moons;
+
+    public Modifier(int mod_id, bool active, string mod_title, string difficulty, string description, string[] on_moons)
+    {
+        this.mod_id = mod_id;
+        this.active = active;
+        this.mod_title = mod_title;
+        this.difficulty = difficulty;
+        this.description = description;
+        this.on_moons = on_moons; // Empty array means available on all moons
+    }
+}
