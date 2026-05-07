@@ -19,14 +19,20 @@ public class RotationalStore
     public static Modifier[] medium_mods = [
         new Modifier(4, false, "Miller's Moon", "Medium", "Spawnable scrap becomes 20% more valuable, but time moves 25% faster.", []),
         new Modifier(5, false, "Mothron's Dawn", "Medium", "Spawnable scrap becomes 15% more valuable and spawns 3 more scrap, but weather becomes eclipsed and indoor/outdoor power increases by 2.\nIf already eclipsed, reap the benefits!", []),
+        new Modifier(8, false, "Watch Your Back", "Medium", "Increase spawnable scrap by 5, but add 3 indoor power and only bracken's spawn.", [])
     ];
     public static Modifier[] hard_mods = [
-        new Modifier(6, false, "Go Play Outside!", "Hard", "Removes all indoor power of the moon, but adds it to outdoor power.", [])
+        new Modifier(6, false, "Go Play Outside!", "Hard", "Removes all indoor power of the moon, but adds it to outdoor power.", []),
+        new Modifier(7, false, "Go Play Inside!", "Hard", "Removes all outdoor power of the moon, but adds it to indoor power.", [])
     ];
     
     public static (int easy_ind1, int easy_ind2, int easy_ind3) easy_indexes = (-1, -1, -1); // -1 = Not Seeded
     public static (int medium_ind1, int medium_ind2) medium_indexes = (-1, -1);
     public static int hard_index = -1;
+    public static float indoor_delta = 0;
+    public static float original_indoor = 0;
+    public static float outdoor_delta = 0;
+    public static float original_outdoor = 0;
     public static void StoreSetup()
     {
         #region Store Commands
@@ -295,11 +301,13 @@ public class RotationalStore
 
     public static async Task EasyModCallbacks(Modifier mod)
     {
+        if(!mod.active) return;
+
         RoundManager rm;
         switch(mod.mod_id)
         {
             case 1:
-                // Spawnable scrap becomes 5% more valuable, but enemies move 5% faster.
+                // Spawnable scrap becomes 7% more valuable, but enemies move 7% faster.
                 if(!LNetworkUtils.IsHostOrServer) return;
 
                 rm = RoundManager.Instance;
@@ -330,8 +338,8 @@ public class RotationalStore
                     rm.currentLevel.minScrap += 2;
                     rm.currentLevel.maxScrap += 2;
                 }
-                rm.currentLevel.maxEnemyPowerCount += 2;
-                rm.currentLevel.maxOutsideEnemyPowerCount += 2;
+                indoor_delta += 2;
+                outdoor_delta += 2;
 
                 while(mod.active)
                 {
@@ -343,14 +351,12 @@ public class RotationalStore
                     rm.currentLevel.minScrap -= 2;
                     rm.currentLevel.maxScrap -= 2;
                 }
-                rm.currentLevel.maxEnemyPowerCount -= 2;
-                rm.currentLevel.maxOutsideEnemyPowerCount -= 2;
                 break;
             case 3:
                 // Remove 2 indoor and outdoor power, but increase chance of meteor rain event
                 rm = RoundManager.Instance;
-                rm.currentLevel.maxEnemyPowerCount -= 2;
-                rm.currentLevel.maxOutsideEnemyPowerCount -= 2;
+                indoor_delta -= 2;
+                outdoor_delta -= 2;
 
                 bool chance_overwriten = false;
                 TimeOfDay tod = TimeOfDay.Instance;
@@ -368,8 +374,6 @@ public class RotationalStore
                 }
 
                 tod.overrideMeteorChance = -1;
-                rm.currentLevel.maxEnemyPowerCount += 2;
-                rm.currentLevel.maxOutsideEnemyPowerCount += 2;
                 break;
         }
     }
@@ -388,11 +392,17 @@ public class RotationalStore
                 medium_mods[1].active = true;
                 LethalUpgradesNetwork.mod5.Value = true;
                 break;
+            case 8:
+                medium_mods[2].active = true;
+                LethalUpgradesNetwork.mod8.Value = true;
+                break;
         }
     }
 
     public static async Task MediumModCallbacks(Modifier mod)
     {
+        if(!mod.active) return;
+
         RoundManager rm;
         switch(mod.mod_id)
         {
@@ -448,13 +458,8 @@ public class RotationalStore
                     rm.currentLevel.maxScrap += 3;
                 }
 
-                rm.currentLevel.maxEnemyPowerCount += 2;
-                rm.currentLevel.maxOutsideEnemyPowerCount += 2;
-                if(hard_mods[0].active)
-                {
-                    // Add the additional indoor power to outdoor
-                    rm.currentLevel.maxOutsideEnemyPowerCount += 2;
-                }
+                indoor_delta += 2;
+                outdoor_delta += 2;
                 
                 var moon = rm.currentLevel;
                 if(moon.currentWeather != LevelWeatherType.Eclipsed)
@@ -492,8 +497,34 @@ public class RotationalStore
                     rm.currentLevel.minScrap -= 3;
                     rm.currentLevel.maxScrap -= 3;
                 }
-                rm.currentLevel.maxEnemyPowerCount -= 2;
-                rm.currentLevel.maxOutsideEnemyPowerCount -= 2;
+                break;
+            case 8:
+                // Increase spawnable scrap by 5, but add 3 indoor power and only bracken's spawn.
+                rm = RoundManager.Instance;
+
+                indoor_delta += 3;
+
+                var enemies_copy = new List<SpawnableEnemyWithRarity>(rm.currentLevel.Enemies);
+                if(LNetworkUtils.IsHostOrServer)
+                {
+                    // var enemies_copy = rm.currentLevel.Enemies; // This references, does not create a separate copy
+                    rm.currentLevel.Enemies.RemoveAll(enemy => enemy.enemyType.enemyName != "Flowerman");
+                    rm.currentLevel.Enemies.ForEach(enemy => enemy.enemyType.MaxCount = 50);
+                    rm.currentLevel.minScrap += 5;
+                    rm.currentLevel.maxScrap += 5;
+                }
+
+                while(mod.active)
+                {
+                    await Task.Delay(1000);
+                }
+
+                if(LNetworkUtils.IsHostOrServer)
+                {
+                    rm.currentLevel.Enemies = enemies_copy;
+                    rm.currentLevel.minScrap -= 5;
+                    rm.currentLevel.maxScrap -= 5;
+                }
                 break;
         }
     }
@@ -508,34 +539,38 @@ public class RotationalStore
                 hard_mods[0].active = true;
                 LethalUpgradesNetwork.mod6.Value = true;
                 break;
+            case 7:
+                hard_mods[1].active = true;
+                LethalUpgradesNetwork.mod7.Value = true;
+                break;
         }
     }
 
     public static async Task HardModCallbacks(Modifier mod)
     {
+        if(!mod.active) return;
+
         RoundManager rm;
         switch(mod.mod_id)
         {
             case 6:
                 // Remove all indoor power, and move it to outdoor power
-                rm = RoundManager.Instance;
-                var inside_power = rm.currentLevel.maxEnemyPowerCount;
-                var outside_power = rm.currentLevel.maxOutsideEnemyPowerCount;
-                rm.currentLevel.maxOutsideEnemyPowerCount += inside_power;
 
                 while(mod.active)
                 {
-                    if(rm.currentMaxInsidePower != 0)
-                    {
-                        rm.currentMaxInsidePower = 0;
-                    }
-
-                    await Task.Delay(500);
+                    await Task.Delay(1000);
                     // Wait for mod to deactivate
                 }
 
-                rm.currentMaxInsidePower = inside_power;
-                rm.currentLevel.maxOutsideEnemyPowerCount = outside_power;
+                break;
+            case 7:
+                // Remove all outdoor power, and move it to indoor power
+
+                while(mod.active)
+                {
+                    await Task.Delay(1000);
+                    // Wait for mod to deactivate
+                }
                 break;
         }
     }
@@ -553,17 +588,48 @@ public class RotationalStore
             return;
         }
 
-        if(!hard_mods[0].active && !easy_mods[1].active && !easy_mods[2].active) return;
+        if(!hard_mods[0].active && !hard_mods[1].active && !easy_mods[1].active && !easy_mods[2].active && !medium_mods[1].active && !medium_mods[2].active) return;
         if(!__instance.shipHasLanded) return;
+        if(!display_once) return;
 
         var hud = HUDManager.Instance;
         var rm = RoundManager.Instance;
+
+        original_indoor = rm.currentMaxInsidePower;
+        original_outdoor = rm.currentLevel.maxOutsideEnemyPowerCount;
+
+        LethalUpgradesBase.mls.LogInfo($"Original indoor power: {original_indoor}");
+        LethalUpgradesBase.mls.LogInfo($"Original outdoor power: {original_outdoor}");
+        LethalUpgradesBase.mls.LogInfo($"Indoor delta: {indoor_delta}");
+        LethalUpgradesBase.mls.LogInfo($"Outdoor delta: {outdoor_delta}");
+
+        rm.currentMaxInsidePower += indoor_delta;
+        rm.currentLevel.maxOutsideEnemyPowerCount += (int)outdoor_delta;
         
-        if(!display_once) return;
+
+        LethalUpgradesBase.mls.LogInfo($"Modified indoor power: {rm.currentMaxInsidePower}");
+        LethalUpgradesBase.mls.LogInfo($"Modified outdoor power: {rm.currentLevel.maxOutsideEnemyPowerCount}");
+
+        if(hard_mods[0].active)
+        {
+            // Only outside power
+            LethalUpgradesBase.mls.LogInfo("Only outside power!");
+            rm.currentLevel.maxOutsideEnemyPowerCount += (int)rm.currentMaxInsidePower;
+            rm.currentMaxInsidePower = 0;
+        }
+        else if(hard_mods[1].active)
+        {
+            // Only inside power
+            LethalUpgradesBase.mls.LogInfo("Only inside power!");
+            rm.currentMaxInsidePower += rm.currentLevel.maxOutsideEnemyPowerCount;
+            rm.currentLevel.maxOutsideEnemyPowerCount = 0;
+            rm.currentMaxOutsidePower = 0;
+        }
 
         display_once = false;
         hud.DisplayTip("Lethal Upgrades", $"Indoor Power: {rm.currentMaxInsidePower}\nOutdoor Power: {rm.currentLevel.maxOutsideEnemyPowerCount}");
     }
+
     static void ModifySpeedAssignment(ref float value)
     {
         if(!easy_mods[0].active) return;
@@ -678,7 +744,7 @@ public class RotationalStore
     }
 
     [HarmonyPatch(typeof(GameNetworkManager), "Disconnect")]
-    [HarmonyPostfix]
+    [HarmonyPrefix]
     static void StopAllModifiers()
     {
         easy_mods[easy_indexes.easy_ind1].active = false;
@@ -694,6 +760,23 @@ public class RotationalStore
         LethalUpgradesNetwork.mod4.Value = false;
         LethalUpgradesNetwork.mod5.Value = false;
         LethalUpgradesNetwork.mod6.Value = false;
+        LethalUpgradesNetwork.mod7.Value = false;
+        LethalUpgradesNetwork.mod8.Value = false;
+
+        LethalUpgradesBase.mls.LogInfo($"Resetting power delta's");
+        var rm = RoundManager.Instance;
+        if(indoor_delta != 0)
+        {
+            LethalUpgradesBase.mls.LogInfo($"Resetting indoor delta of {indoor_delta}");
+            rm.currentMaxInsidePower = original_indoor;
+            indoor_delta = 0;
+        }
+        if(outdoor_delta != 0)
+        {
+            LethalUpgradesBase.mls.LogInfo($"Resetting outdoor delta of {outdoor_delta}");
+            rm.currentLevel.maxOutsideEnemyPowerCount = (int)original_outdoor;
+            outdoor_delta = 0;
+        }
     }
 }
 #endregion

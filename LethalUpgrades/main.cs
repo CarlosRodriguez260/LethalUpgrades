@@ -827,6 +827,8 @@ public class LethalUpgradesNetwork
     public static LNetworkVariable<bool> mod4;
     public static LNetworkVariable<bool> mod5;
     public static LNetworkVariable<bool> mod6;
+    public static LNetworkVariable<bool> mod7;
+    public static LNetworkVariable<bool> mod8;
 
 
     public static LNetworkVariable<(int, int, int)> easy_indexes;
@@ -869,6 +871,8 @@ public class LethalUpgradesNetwork
         mod4 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_mod4", false);
         mod5 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_mod5", false);
         mod6 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_mod6", false);
+        mod7 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_mod7", false);
+        mod8 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_mod8", false);
     }
 
     private static void OnClientJoinedRequest(ulong clientId)
@@ -950,81 +954,139 @@ public class LethalUpgradesNetwork
         hard_index.Value = -2;
         hard_index.Value = old_hard_index;
 
-        if(RotationalStore.easy_mods[0].active)
+        foreach(Modifier mod in RotationalStore.easy_mods)
         {
-            if(mod1.Value != true)
+            // Easy Mods IDs: 1, 2, 3
+            if(mod.mod_id == 1)
             {
-                mod1.Value = true;
+                if(mod.active)
+                {
+                    if(mod1.Value != true)
+                    {
+                        mod1.Value = true;
+                    }
+                    else
+                    {
+                        mod1.Value = false;
+                        mod1.Value = true;
+                    }
+                }
             }
-            else
+            else if(mod.mod_id == 2)
             {
-                mod1.Value = false;
-                mod1.Value = true;
+                if(mod.active)
+                {
+                    if(mod2.Value != true)
+                    {
+                        mod2.Value = true;
+                    }
+                    else
+                    {
+                        mod2.Value = false;
+                        mod2.Value = true;
+                    }
+                }
+            }
+            else if(mod.mod_id == 3)
+            {
+                if(mod.active)
+                {
+                    if(mod3.Value != true)
+                    {
+                        mod3.Value = true;
+                    }
+                    else
+                    {
+                        mod3.Value = false;
+                        mod3.Value = true;
+                    }
+                }
+            }
+        }
+        
+
+        foreach(Modifier mod in RotationalStore.medium_mods)
+        {
+            // Medium Mods IDs: 4, 5, 8
+            if(mod.mod_id == 4)
+            {
+                if(mod.active)
+                {
+                    if(mod4.Value != true)
+                    {
+                        mod4.Value = true;
+                    }
+                    else
+                    {
+                        mod4.Value = false;
+                        mod4.Value = true;
+                    }
+                }
+            }
+            else if(mod.mod_id == 5)
+            {
+                if(mod.active)
+                {
+                    if(mod5.Value != true)
+                    {
+                        mod5.Value = true;
+                    }
+                    else
+                    {
+                        mod5.Value = false;
+                        mod5.Value = true;
+                    }
+                }
+            }
+            else if(mod.mod_id == 8)
+            {
+                if(mod.active)
+                {
+                    if(mod8.Value != true)
+                    {
+                        mod8.Value = true;
+                    }
+                    else
+                    {
+                        mod8.Value = false;
+                        mod8.Value = true;
+                    }
+                }
             }
         }
 
-        if(RotationalStore.easy_mods[1].active)
+        foreach(Modifier mod in RotationalStore.hard_mods)
         {
-            if(mod2.Value != true)
+            // Hard Mods IDs: 6, 7
+            if(mod.mod_id == 6)
             {
-                mod2.Value = true;
+                if(mod.active)
+                {
+                    if(mod6.Value != true)
+                    {
+                        mod6.Value = true;
+                    }
+                    else
+                    {
+                        mod6.Value = false;
+                        mod6.Value = true;
+                    }
+                }
             }
-            else
+            else if(mod.mod_id == 7)
             {
-                mod2.Value = false;
-                mod2.Value = true;
-            }
-        }
-
-        if(RotationalStore.easy_mods[2].active)
-        {
-            if(mod3.Value != true)
-            {
-                mod3.Value = true;
-            }
-            else
-            {
-                mod3.Value = false;
-                mod3.Value = true;
-            }
-        }
-
-        if(RotationalStore.medium_mods[0].active)
-        {
-            if(mod4.Value != true)
-            {
-                mod4.Value = true;
-            }
-            else
-            {
-                mod4.Value = false;
-                mod4.Value = true;
-            }
-        }
-
-        if(RotationalStore.medium_mods[1].active)
-        {
-            if(mod5.Value != true)
-            {
-                mod5.Value = true;
-            }
-            else
-            {
-                mod5.Value = false;
-                mod5.Value = true;
-            }
-        }
-
-        if(RotationalStore.hard_mods[0].active)
-        {
-            if(mod6.Value != true)
-            {
-                mod6.Value = true;
-            }
-            else
-            {
-                mod6.Value = false;
-                mod6.Value = true;
+                if(mod.active)
+                {
+                    if(mod7.Value != true)
+                    {
+                        mod7.Value = true;
+                    }
+                    else
+                    {
+                        mod7.Value = false;
+                        mod7.Value = true;
+                    }
+                }
             }
         }
 
@@ -1254,11 +1316,25 @@ public class LethalUpgradesNetwork
                 LethalUpgradesBase.mls.LogInfo($"Activated mod 5 with new value of {newValue}");
             };
 
+            mod8.OnValueChanged += (OldValue, newValue) =>
+            {
+                RotationalStore.medium_mods[2].active = newValue;
+                RotationalStore.MediumModCallbacks(RotationalStore.medium_mods[2]);
+                LethalUpgradesBase.mls.LogInfo($"Activated mod 8 with new value of {newValue}");
+            };
+
             mod6.OnValueChanged += (OldValue, newValue) =>
             {
                 RotationalStore.hard_mods[0].active = newValue;
                 // Host prioritizes spawns, but clients can still see power level
                 RotationalStore.HardModCallbacks(RotationalStore.hard_mods[0]);
+            };
+
+            mod7.OnValueChanged += (OldValue, newValue) =>
+            {
+                RotationalStore.hard_mods[1].active = newValue;
+                // Host prioritizes spawns, but clients can still see power level
+                RotationalStore.HardModCallbacks(RotationalStore.hard_mods[1]);
             };
         }
     }
