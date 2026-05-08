@@ -6,6 +6,7 @@ using LethalNetworkAPI.Utils;
 using UnityEngine;
 using UnityEngine.AI;
 using System.Net.WebSockets;
+using GameNetcodeStuff;
 
 namespace LethalUpgrades.Store;
 
@@ -14,12 +15,16 @@ public class RotationalStore
     public static Modifier[] easy_mods = [
         new Modifier(1, false, "Shiny but Swifty", "Easy", "Spawnable scrap becomes 7% more valuable, but enemies move 7% faster.", []),
         new Modifier(2, false, "More Risk, More Reward", "Easy", "Increase spawnable scrap by 2, but add 2 indoor and outdoor power.", []),
-        new Modifier(3, false, "Risk of Rain", "Easy", "Remove 2 indoor and outdoor power, but increase meteor shower event chance by 10%.", [])
+        new Modifier(3, false, "Risk of Rain", "Easy", "Remove 2 indoor and outdoor power, but increase meteor shower event chance by 10%.", []),
+        new Modifier(11, false, "Edmund's Moon", "Easy", "Time moves 15% slower, but decreases amount of scrap by 2.", [])
     ];
     public static Modifier[] medium_mods = [
         new Modifier(4, false, "Miller's Moon", "Medium", "Spawnable scrap becomes 20% more valuable, but time moves 25% faster.", []),
         new Modifier(5, false, "Mothron's Dawn", "Medium", "Spawnable scrap becomes 15% more valuable and spawns 3 more scrap, but weather becomes eclipsed and indoor/outdoor power increases by 2.\nIf already eclipsed, reap the benefits!", []),
-        new Modifier(8, false, "Watch Your Back", "Medium", "Increase spawnable scrap by 5, but add 3 indoor power and only bracken's spawn.", [])
+        new Modifier(8, false, "Watch Your Back", "Medium", "Increase spawnable scrap by 5, but add 3 indoor power and only bracken's spawn.", []),
+        new Modifier(9, false, "Shaped Glass", "Medium", "Spawn 1.5x the amount of scrap, but lose half your health.", []),
+        new Modifier(10, false, "Lightning Speed", "Medium", "Gain 2x movement speed, but enemies gain 3x movement speed.", []),
+
     ];
     public static Modifier[] hard_mods = [
         new Modifier(6, false, "Go Play Outside!", "Hard", "Removes all indoor power of the moon, but adds it to outdoor power.", []),
@@ -296,6 +301,10 @@ public class RotationalStore
                 easy_mods[2].active = true;
                 LethalUpgradesNetwork.mod3.Value = true;
                 break;
+            case 11:
+                easy_mods[3].active = true;
+                LethalUpgradesNetwork.mod11.Value = true;
+                break;
         }
     }
 
@@ -304,6 +313,7 @@ public class RotationalStore
         if(!mod.active) return;
 
         RoundManager rm;
+        TimeOfDay tod;
         switch(mod.mod_id)
         {
             case 1:
@@ -359,7 +369,7 @@ public class RotationalStore
                 outdoor_delta -= 2;
 
                 bool chance_overwriten = false;
-                TimeOfDay tod = TimeOfDay.Instance;
+                tod = TimeOfDay.Instance;
                 while(mod.active)
                 {
                     if(LNetworkUtils.IsHostOrServer && !chance_overwriten)
@@ -374,6 +384,34 @@ public class RotationalStore
                 }
 
                 tod.overrideMeteorChance = -1;
+                break;
+            case 11:
+                // Time moves 15% slower, but decreases amount of scrap by 2.
+                if(!LNetworkUtils.IsHostOrServer) return;
+
+                rm = RoundManager.Instance;
+                rm.currentLevel.minScrap -= 2;
+                rm.currentLevel.maxScrap -= 2;
+
+                bool set_multiplier = false;
+                tod = TimeOfDay.Instance;
+                while(mod.active)
+                {
+                    if(!set_multiplier)
+                    {
+                        tod = TimeOfDay.Instance;
+                        if(tod == null) continue;
+
+                        set_multiplier = true;
+                        tod.globalTimeSpeedMultiplier *= 0.85f;
+                        // LethalUpgradesBase.mls.LogInfo("Applied time multiplier!");
+                    }
+                    await Task.Delay(1000);
+                }
+
+                rm.currentLevel.minScrap += 2;
+                rm.currentLevel.maxScrap += 2;
+                tod.globalTimeSpeedMultiplier /= 0.85f;
                 break;
         }
     }
@@ -396,6 +434,14 @@ public class RotationalStore
                 medium_mods[2].active = true;
                 LethalUpgradesNetwork.mod8.Value = true;
                 break;
+            case 9:
+                medium_mods[3].active = true;
+                LethalUpgradesNetwork.mod9.Value = true;
+                break;
+            case 10:
+                medium_mods[4].active = true;
+                LethalUpgradesNetwork.mod10.Value = true;
+                break;
         }
     }
 
@@ -404,6 +450,7 @@ public class RotationalStore
         if(!mod.active) return;
 
         RoundManager rm;
+        PlayerControllerB player;
         switch(mod.mod_id)
         {
             case 4:
@@ -430,13 +477,13 @@ public class RotationalStore
                         if(tod == null) continue;
 
                         set_multiplier = true;
-                        tod.globalTimeSpeedMultiplier = 1.4f * 1.25f;
+                        tod.globalTimeSpeedMultiplier *= 1.25f;
                         // LethalUpgradesBase.mls.LogInfo("Applied time multiplier!");
                     }
                     await Task.Delay(1000);
                 }
 
-                tod.globalTimeSpeedMultiplier = 1.4f;
+                tod.globalTimeSpeedMultiplier /= 1.25f;
                 rm.scrapValueMultiplier = 0.4f;
                 break;
             case 5:
@@ -526,6 +573,45 @@ public class RotationalStore
                     rm.currentLevel.maxScrap -= 5;
                 }
                 break;
+            case 9:
+                // Spawn 2x the amount of scrap, but lose half your health
+                rm = RoundManager.Instance;
+                var old_min = rm.currentLevel.minScrap;
+                var old_max = rm.currentLevel.maxScrap;
+                player = GameNetworkManager.Instance.localPlayerController;
+                if(LNetworkUtils.IsHostOrServer)
+                {
+                    var new_min_scrap = rm.currentLevel.minScrap*1.5f;
+                    var new_max_scrap = rm.currentLevel.maxScrap*1.5f;
+                    rm.currentLevel.minScrap = (int)new_min_scrap;
+                    rm.currentLevel.maxScrap = (int)new_max_scrap;
+                }
+                player.health = player.health / 2;
+
+                while(mod.active)
+                {
+                    await Task.Delay(1000);
+                }
+
+                if(LNetworkUtils.IsHostOrServer)
+                {
+                    rm.currentLevel.minScrap = old_min;
+                    rm.currentLevel.maxScrap = old_max;
+                }
+                break;
+            case 10:
+                // Gain 2x movement speed, but enemies gain 3x movement speed
+                player = GameNetworkManager.Instance.localPlayerController;
+                player.movementSpeed *= 2;
+
+                while(mod.active)
+                {
+                    await Task.Delay(1000);
+                }
+
+                player.movementSpeed /= 2;
+
+                break;
         }
     }
     #endregion
@@ -555,22 +641,9 @@ public class RotationalStore
         {
             case 6:
                 // Remove all indoor power, and move it to outdoor power
-
-                while(mod.active)
-                {
-                    await Task.Delay(1000);
-                    // Wait for mod to deactivate
-                }
-
                 break;
             case 7:
                 // Remove all outdoor power, and move it to indoor power
-
-                while(mod.active)
-                {
-                    await Task.Delay(1000);
-                    // Wait for mod to deactivate
-                }
                 break;
         }
     }
@@ -589,7 +662,7 @@ public class RotationalStore
         }
 
         if(!hard_mods[0].active && !hard_mods[1].active && !easy_mods[1].active && !easy_mods[2].active && !medium_mods[1].active && !medium_mods[2].active) return;
-        if(!__instance.shipHasLanded) return;
+        if(__instance.inShipPhase) return;
         if(!display_once) return;
 
         var hud = HUDManager.Instance;
@@ -630,12 +703,21 @@ public class RotationalStore
         hud.DisplayTip("Lethal Upgrades", $"Indoor Power: {rm.currentMaxInsidePower}\nOutdoor Power: {rm.currentLevel.maxOutsideEnemyPowerCount}");
     }
 
+    [HarmonyPatch(typeof(NavMeshAgent), "set_speed")]
+    [HarmonyPrefix]
     static void ModifySpeedAssignment(ref float value)
     {
-        if(!easy_mods[0].active) return;
-        
-        value *= 1.07f;
-        if(value >= 30f)
+        if(easy_mods[0].active)
+        {
+            value *= 1.07f;
+        }
+        if(medium_mods[4].active)
+        {
+            // LethalUpgradesBase.mls.LogInfo($"Setting x4 speed modifier to enemy!");
+            value *= 3f;
+        }
+
+        if(value > 30f)
         {
             value = 30f;
         }
@@ -765,13 +847,13 @@ public class RotationalStore
 
         LethalUpgradesBase.mls.LogInfo($"Resetting power delta's");
         var rm = RoundManager.Instance;
-        if(indoor_delta != 0)
+        if(indoor_delta != 0 || hard_mods[1].active)
         {
             LethalUpgradesBase.mls.LogInfo($"Resetting indoor delta of {indoor_delta}");
             rm.currentMaxInsidePower = original_indoor;
             indoor_delta = 0;
         }
-        if(outdoor_delta != 0)
+        if(outdoor_delta != 0 || hard_mods[0].active)
         {
             LethalUpgradesBase.mls.LogInfo($"Resetting outdoor delta of {outdoor_delta}");
             rm.currentLevel.maxOutsideEnemyPowerCount = (int)original_outdoor;

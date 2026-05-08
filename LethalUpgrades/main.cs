@@ -24,7 +24,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
 {
     private const string modGUID = "ChuitosLethalUpgrades";
     private const string modName = "Lethal Upgrades Mod";
-    private const string modVersion = "0.1";
+    private const string modVersion = "1.3.9";
     private readonly Harmony harmony = new Harmony(modGUID);
     internal static LethalUpgradesBase Instance;
     internal static ManualLogSource mls;
@@ -829,6 +829,9 @@ public class LethalUpgradesNetwork
     public static LNetworkVariable<bool> mod6;
     public static LNetworkVariable<bool> mod7;
     public static LNetworkVariable<bool> mod8;
+    public static LNetworkVariable<bool> mod9;
+    public static LNetworkVariable<bool> mod10;
+    public static LNetworkVariable<bool> mod11;
 
 
     public static LNetworkVariable<(int, int, int)> easy_indexes;
@@ -873,6 +876,9 @@ public class LethalUpgradesNetwork
         mod6 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_mod6", false);
         mod7 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_mod7", false);
         mod8 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_mod8", false);
+        mod9 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_mod9", false);
+        mod10 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_mod10", false);
+        mod11 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_mod11", false);
     }
 
     private static void OnClientJoinedRequest(ulong clientId)
@@ -956,7 +962,7 @@ public class LethalUpgradesNetwork
 
         foreach(Modifier mod in RotationalStore.easy_mods)
         {
-            // Easy Mods IDs: 1, 2, 3
+            // Easy Mods IDs: 1, 2, 3, 11
             if(mod.mod_id == 1)
             {
                 if(mod.active)
@@ -1002,12 +1008,27 @@ public class LethalUpgradesNetwork
                     }
                 }
             }
+            else if(mod.mod_id == 11)
+            {
+                if(mod.active)
+                {
+                    if(mod11.Value != true)
+                    {
+                        mod11.Value = true;
+                    }
+                    else
+                    {
+                        mod11.Value = false;
+                        mod11.Value = true;
+                    }
+                }
+            }
         }
         
 
         foreach(Modifier mod in RotationalStore.medium_mods)
         {
-            // Medium Mods IDs: 4, 5, 8
+            // Medium Mods IDs: 4, 5, 8, 9, 10
             if(mod.mod_id == 4)
             {
                 if(mod.active)
@@ -1050,6 +1071,36 @@ public class LethalUpgradesNetwork
                     {
                         mod8.Value = false;
                         mod8.Value = true;
+                    }
+                }
+            }
+            else if(mod.mod_id == 9)
+            {
+                if(mod.active)
+                {
+                    if(mod9.Value != true)
+                    {
+                        mod9.Value = true;
+                    }
+                    else
+                    {
+                        mod9.Value = false;
+                        mod9.Value = true;
+                    }
+                }
+            }
+            else if(mod.mod_id == 10)
+            {
+                if(mod.active)
+                {
+                    if(mod10.Value != true)
+                    {
+                        mod10.Value = true;
+                    }
+                    else
+                    {
+                        mod10.Value = false;
+                        mod10.Value = true;
                     }
                 }
             }
@@ -1302,6 +1353,13 @@ public class LethalUpgradesNetwork
                 LethalUpgradesBase.mls.LogInfo($"Activated mod 3 with new value of {newValue}");
             };
 
+            mod11.OnValueChanged += (OldValue, newValue) =>
+            {
+                RotationalStore.easy_mods[3].active = newValue;
+                RotationalStore.EasyModCallbacks(RotationalStore.easy_mods[3]);
+                LethalUpgradesBase.mls.LogInfo($"Activated mod 11 with new value of {newValue}");
+            };
+
             mod4.OnValueChanged += (OldValue, newValue) =>
             {
                 RotationalStore.medium_mods[0].active = newValue;
@@ -1323,11 +1381,26 @@ public class LethalUpgradesNetwork
                 LethalUpgradesBase.mls.LogInfo($"Activated mod 8 with new value of {newValue}");
             };
 
+            mod9.OnValueChanged += (OldValue, newValue) =>
+            {
+                RotationalStore.medium_mods[3].active = newValue;
+                RotationalStore.MediumModCallbacks(RotationalStore.medium_mods[3]);
+                LethalUpgradesBase.mls.LogInfo($"Activated mod 9 with new value of {newValue}");
+            };
+
+            mod10.OnValueChanged += (OldValue, newValue) =>
+            {
+                RotationalStore.medium_mods[4].active = newValue;
+                RotationalStore.MediumModCallbacks(RotationalStore.medium_mods[4]);
+                LethalUpgradesBase.mls.LogInfo($"Activated mod 10 with new value of {newValue}");
+            };
+
             mod6.OnValueChanged += (OldValue, newValue) =>
             {
                 RotationalStore.hard_mods[0].active = newValue;
                 // Host prioritizes spawns, but clients can still see power level
                 RotationalStore.HardModCallbacks(RotationalStore.hard_mods[0]);
+                LethalUpgradesBase.mls.LogInfo($"Activated mod 6 with new value of {newValue}");
             };
 
             mod7.OnValueChanged += (OldValue, newValue) =>
@@ -1335,6 +1408,7 @@ public class LethalUpgradesNetwork
                 RotationalStore.hard_mods[1].active = newValue;
                 // Host prioritizes spawns, but clients can still see power level
                 RotationalStore.HardModCallbacks(RotationalStore.hard_mods[1]);
+                LethalUpgradesBase.mls.LogInfo($"Activated mod 7 with new value of {newValue}");
             };
         }
     }

@@ -1,4 +1,13 @@
 # Releases
+
+## Version Release 1.3.9
+
+- Added more modifiers:
+    + 1 Easy
+    + 3 Medium
+    + 1 Hard
+- Refactored some code for better readbility and implementation.
+
 ## Version Release 1.3.8
 
 - Added rotational modifier store.

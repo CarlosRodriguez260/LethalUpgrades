@@ -64,13 +64,18 @@ Unfortunately, we couldn't lift the curse on them, so... they come with *slight*
 - Shiny but Swift: Spawnable scrap becomes 7% more valuable, but enemies move 7% faster.
 - More Risk, More Reward: Increase spawnable scrap by 2, but add 2 indoor and outdoor power.
 - Risk of Rain: Remove 2 indoor and outdoor power, but increase meteor shower event chance by 10%.
+- Edmund's Moon: Time moves 15% slower, but decreases amount of scrap by 2.
 
 **Medium Modifiers**
 - Miller's Moon: Spawnable scrap becomes 20% more valuable, but time moves 25% faster.
 - Mothron's Dawn: Spawnable scrap becomes 15% more valuable and spawn 3 more scrap, but weather becomes eclipsed and indoor/outdoor power increases by 2.
+- Watch Your Back: Increase spawnable scrap by 5, but add 3 indoor power and only bracken's spawn.
+- Shaped Glass: Spawn 1.5x the amount of scrap, but lose half your health.
+- Lightning Speed: Gain 2x movement speed, but enemies gain 3x movement speed.
 
 **Hard Modifiers**
 - Go Play Outside! : Removes all indoor power of the moon, but adds it to outdoor power.
+- Go Play Inside! : Removes all outdoor power of the moon, but adds it to indoor power.
 
 You can access the store by typing `rot store` in the terminal.
 
@@ -103,8 +108,6 @@ I want to add more, but I wanted to release these for now so everyone can feel t
 The store system works as follows:
 - When a host loads into their save, modifiers are rolled.
 - When rolling, the game will choose 3 easy, 2 medium and 1 hard modifier for players to choose from.
-    - Currently there are only 3 easy, 2 medium and 1 hard modifiers, so it will be the same for now.
-    - With more modifiers in the future, repeats should happen less.
 - Players can only activate modifiers in orbit, and they will be re-rolled once they go back into orbit.
 - Once a modifier is active, players are not allowed to reroute to other moons!
 - Any amount of modifiers can be activated, so choose wisely!
