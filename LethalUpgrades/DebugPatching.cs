@@ -34,14 +34,22 @@ internal class DebugPatching
             // }
 
             var rm = RoundManager.Instance;
-            if(rm != null)
+            var level = rm.currentLevel;
+            // if(rm != null)
+            // {
+            //     var moon = rm.currentLevel;
+            //     LethalUpgradesBase.mls.LogInfo($"Looking at {moon.PlanetName} enemy list");
+            //     foreach(SpawnableEnemyWithRarity enemy in moon.Enemies)
+            //     {
+            //         LethalUpgradesBase.mls.LogInfo($"Enemy: {enemy.enemyType.enemyName} | Rarity: {enemy.rarity}");
+            //     }
+            // }
+
+            var scrap_list = rm.currentLevel.spawnableScrap;
+            LethalUpgradesBase.mls.LogInfo($"Looking at {rm.currentLevel.PlanetName} scrap table.");
+            foreach(SpawnableItemWithRarity scrap in scrap_list)
             {
-                var moon = rm.currentLevel;
-                LethalUpgradesBase.mls.LogInfo($"Looking at {moon.PlanetName} enemy list");
-                foreach(SpawnableEnemyWithRarity enemy in moon.Enemies)
-                {
-                    LethalUpgradesBase.mls.LogInfo($"Enemy: {enemy.enemyType.enemyName} | Rarity: {enemy.rarity}");
-                }
+                LethalUpgradesBase.mls.LogInfo($"Scrap {scrap.spawnableItem.itemName} | Rarity {scrap.rarity}");
             }
         }
     }

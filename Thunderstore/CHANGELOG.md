@@ -1,5 +1,13 @@
 # Releases
 
+## Version Release 1.4.0
+
+- Added more modifiers:
+    + 2 Easy
+    + 3 Hard
+- Reorganized terminal commands for more cleanliness.
+- Fixed a few bugs pertinent to past modifier additions.
+
 ## Version Release 1.3.9
 
 - Added more modifiers:

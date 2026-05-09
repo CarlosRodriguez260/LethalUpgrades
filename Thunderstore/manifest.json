@@ -1,8 +1,8 @@
 {
     "name": "LethalUpgrades",
-    "version_number": "1.3.9",
+    "version_number": "1.4.0",
     "website_url": "https://github.com/CarlosRodriguez260/LethalUpgrades",
-    "description": "Lethal Upgrades, whatever happened there?",
+    "description": "Adds a progressive upgrade catalog and a system to add modifiers to moons!",
     "dependencies": [
         "BepInEx-BepInExPack-5.4.2100",
         "xilophor-LethalNetworkAPI-3.3.3",

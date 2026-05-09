@@ -1,12 +1,10 @@
 using TerminalApi.Classes;
 using static TerminalApi.TerminalApi;
-using LethalUpgrades;
 using HarmonyLib;
 using LethalNetworkAPI.Utils;
-using UnityEngine;
 using UnityEngine.AI;
-using System.Net.WebSockets;
 using GameNetcodeStuff;
+using UnityEngine;
 
 namespace LethalUpgrades.Store;
 
@@ -16,7 +14,9 @@ public class RotationalStore
         new Modifier(1, false, "Shiny but Swifty", "Easy", "Spawnable scrap becomes 7% more valuable, but enemies move 7% faster.", []),
         new Modifier(2, false, "More Risk, More Reward", "Easy", "Increase spawnable scrap by 2, but add 2 indoor and outdoor power.", []),
         new Modifier(3, false, "Risk of Rain", "Easy", "Remove 2 indoor and outdoor power, but increase meteor shower event chance by 10%.", []),
-        new Modifier(11, false, "Edmund's Moon", "Easy", "Time moves 15% slower, but decreases amount of scrap by 2.", [])
+        new Modifier(11, false, "Edmund's Moon", "Easy", "Time moves 15% slower, but decreases amount of scrap by 2.", []),
+        new Modifier(12, false, "Bouncy House", "Easy", "Jump 10% higher, but gravity increases fall damage by 10%.", []),
+        new Modifier(13, false, "Pound for Pound", "Easy", "Scrap is 10% more valuable, but weighs 5 more pounds.", [])
     ];
     public static Modifier[] medium_mods = [
         new Modifier(4, false, "Miller's Moon", "Medium", "Spawnable scrap becomes 20% more valuable, but time moves 25% faster.", []),
@@ -28,7 +28,10 @@ public class RotationalStore
     ];
     public static Modifier[] hard_mods = [
         new Modifier(6, false, "Go Play Outside!", "Hard", "Removes all indoor power of the moon, but adds it to outdoor power.", []),
-        new Modifier(7, false, "Go Play Inside!", "Hard", "Removes all outdoor power of the moon, but adds it to indoor power.", [])
+        new Modifier(7, false, "Go Play Inside!", "Hard", "Removes all outdoor power of the moon, but adds it to indoor power.", []),
+        new Modifier(14, false, "Double it and give it to the next person!", "Hard", "1.5x scrap amount and 1.5x scrap value, but double indoor/outdoor power and max enemy spawns.", []),
+        new Modifier(15, false, "Midas Touch", "Hard", "Only gold bars spawn as scrap, but scrap amount decreases by half and health reduces to 20.", []),
+        new Modifier(16, false, "The End", "God help us all...", "3x scrap amount/value and double health. But...", [])
     ];
     
     public static (int easy_ind1, int easy_ind2, int easy_ind3) easy_indexes = (-1, -1, -1); // -1 = Not Seeded
@@ -43,7 +46,7 @@ public class RotationalStore
         #region Store Commands
         LethalUpgradesBase.mls.LogInfo("Store is awake!");
 
-        TerminalNode store_node = CreateTerminalNode("WELCOME TO THE ROTATIONAL MODIFIER STORE!\n\nPlease make sure to look at the available modifiers before making a choice!\n", clearPreviousText: true);
+        TerminalNode store_node = CreateTerminalNode("WELCOME TO THE ROTATIONAL MODIFIER STORE!\n\nPlease make sure to look at the available modifiers before making a choice!\nOnce you choose a modifier, you cannot go to other moons until you come back to orbit!\n", clearPreviousText: true);
         TerminalKeyword store_keyword = CreateTerminalKeyword("rot store", isVerb: false, store_node);
         AddTerminalKeyword(store_keyword ,new CommandInfo()
         {
@@ -118,7 +121,7 @@ public class RotationalStore
                 string mod1 = $"Title: {hard_mod.mod_title}\n" +
                 $"Difficulty: {hard_mod.difficulty}\n" +
                 $"Description: {hard_mod.description}\n" +
-                $"Type '{hard_mod.difficulty}' to activate.\n" +
+                $"Type 'Hard' to activate.\n" +
                 $"Active: {(!hard_mod.active ? "No" : "Yes")}\n\n";
                 return mod1;
             }, Category = "rot store", Description = "Shows the available tier 3 modifier"
@@ -305,6 +308,14 @@ public class RotationalStore
                 easy_mods[3].active = true;
                 LethalUpgradesNetwork.mod11.Value = true;
                 break;
+            case 12:
+                easy_mods[4].active = true;
+                LethalUpgradesNetwork.mod12.Value = true;
+                break;
+            case 13:
+                easy_mods[5].active = true;
+                LethalUpgradesNetwork.mod13.Value = true;
+                break;
         }
     }
 
@@ -314,6 +325,7 @@ public class RotationalStore
 
         RoundManager rm;
         TimeOfDay tod;
+        PlayerControllerB player;
         switch(mod.mod_id)
         {
             case 1:
@@ -413,6 +425,41 @@ public class RotationalStore
                 rm.currentLevel.maxScrap += 2;
                 tod.globalTimeSpeedMultiplier /= 0.85f;
                 break;
+            case 12:
+                // Jump 10% higher, but take 10% more fall damage.
+                player = GameNetworkManager.Instance.localPlayerController;
+                player.jumpForce *= 1.10f;
+
+                while(mod.active)
+                {
+                    // Additional call to calculate fall damage: FallDamage()
+                    await Task.Delay(1000);
+                }
+
+                player.jumpForce /= 1.10f;
+                break;
+            case 13:
+                // Scrap is 10% more valuable, but weighs 5 more pounds.
+                rm = RoundManager.Instance;
+                if(!LNetworkUtils.IsHostOrServer) return;
+
+                if(rm.scrapValueMultiplier != 0.4f)
+                {
+                    rm.scrapValueMultiplier *= 1.10f;
+                }
+                else
+                {
+                    rm.scrapValueMultiplier = 0.4f * 1.10f;
+                }
+
+                while(mod.active)
+                {
+                    // Additional call to add weight to items: AddedWeight()
+                    await Task.Delay(1000);
+                }
+
+                rm.scrapValueMultiplier = 0.4f;
+                break;
         }
     }
     #endregion
@@ -451,6 +498,7 @@ public class RotationalStore
 
         RoundManager rm;
         PlayerControllerB player;
+        TimeOfDay tod;
         switch(mod.mod_id)
         {
             case 4:
@@ -468,12 +516,11 @@ public class RotationalStore
                 }
 
                 bool set_multiplier = false;
-                TimeOfDay tod = TimeOfDay.Instance;
+                tod = TimeOfDay.Instance;
                 while(mod.active)
                 {
                     if(!set_multiplier)
                     {
-                        tod = TimeOfDay.Instance;
                         if(tod == null) continue;
 
                         set_multiplier = true;
@@ -556,7 +603,7 @@ public class RotationalStore
                 {
                     // var enemies_copy = rm.currentLevel.Enemies; // This references, does not create a separate copy
                     rm.currentLevel.Enemies.RemoveAll(enemy => enemy.enemyType.enemyName != "Flowerman");
-                    rm.currentLevel.Enemies.ForEach(enemy => enemy.enemyType.MaxCount = 50);
+                    rm.currentLevel.Enemies.ForEach(enemy => enemy.enemyType.MaxCount = 10);
                     rm.currentLevel.minScrap += 5;
                     rm.currentLevel.maxScrap += 5;
                 }
@@ -574,7 +621,7 @@ public class RotationalStore
                 }
                 break;
             case 9:
-                // Spawn 2x the amount of scrap, but lose half your health
+                // Spawn 1.5x the amount of scrap, but lose half your health
                 rm = RoundManager.Instance;
                 var old_min = rm.currentLevel.minScrap;
                 var old_max = rm.currentLevel.maxScrap;
@@ -629,6 +676,18 @@ public class RotationalStore
                 hard_mods[1].active = true;
                 LethalUpgradesNetwork.mod7.Value = true;
                 break;
+            case 14:
+                hard_mods[2].active = true;
+                LethalUpgradesNetwork.mod14.Value = true;
+                break;
+            case 15:
+                hard_mods[3].active = true;
+                LethalUpgradesNetwork.mod15.Value = true;
+                break;
+            case 16:
+                hard_mods[4].active = true;
+                LethalUpgradesNetwork.mod16.Value = true;
+                break;
         }
     }
 
@@ -637,6 +696,10 @@ public class RotationalStore
         if(!mod.active) return;
 
         RoundManager rm;
+        PlayerControllerB player;
+        SelectableLevel moon;
+        HUDManager hud;
+        TimeOfDay tod;
         switch(mod.mod_id)
         {
             case 6:
@@ -644,6 +707,148 @@ public class RotationalStore
                 break;
             case 7:
                 // Remove all outdoor power, and move it to indoor power
+                break;
+            case 14:
+                // 2x scrap amount and 1.25x scrap value, but double indoor/outdoor power and max enemy spawns.
+                rm = RoundManager.Instance;
+                var enemies_copy = new List<SpawnableEnemyWithRarity>(rm.currentLevel.Enemies);
+                indoor_delta += rm.currentLevel.maxEnemyPowerCount;
+                outdoor_delta += rm.currentLevel.maxOutsideEnemyPowerCount;
+
+                var old_min_scrap = rm.currentLevel.minScrap;
+                var old_max_scrap = rm.currentLevel.maxScrap;
+                if(LNetworkUtils.IsHostOrServer)
+                {
+                    rm.currentLevel.minScrap *= 2;
+                    rm.currentLevel.maxScrap *= 2;
+                    rm.scrapValueMultiplier *= 1.5f;
+                    LethalUpgradesBase.mls.LogInfo($"New Min Scrap: {rm.currentLevel.minTotalScrapValue}");
+                    LethalUpgradesBase.mls.LogInfo($"New Max Scrap: {rm.currentLevel.maxTotalScrapValue}");
+
+                    rm.currentLevel.Enemies.ForEach(enemy => enemy.enemyType.MaxCount *= 2);
+                }
+
+                
+                while(mod.active)
+                {
+                    await Task.Delay(1000);
+                }
+
+                if(LNetworkUtils.IsHostOrServer)
+                {
+                    rm.currentLevel.minScrap = old_min_scrap;
+                    rm.currentLevel.maxTotalScrapValue = old_max_scrap;
+                    rm.scrapValueMultiplier = 0.4f;
+                    rm.currentLevel.Enemies = enemies_copy;
+                }
+
+                break;
+            case 15:
+                // Only gold bars spawn as scrap, but scrap amount decreases by half and health reduces to 20.
+                rm = RoundManager.Instance;
+                player = GameNetworkManager.Instance.localPlayerController;
+                moon = rm.currentLevel;
+                player.health = 20;
+             
+                if(!LNetworkUtils.IsHostOrServer) return;
+                moon.minScrap /= 2;
+                moon.maxScrap /= 2;
+
+                var scrap_list = moon.spawnableScrap;
+                var original_scrap_copy = new List<SpawnableItemWithRarity>(scrap_list);
+                bool contains_bar = scrap_list.Any(scrap => scrap.spawnableItem.itemName == "Gold bar");
+                if(contains_bar)
+                {
+                    LethalUpgradesBase.mls.LogInfo("Planet has gold bar in loot table!");
+                    scrap_list.RemoveAll(scrap => scrap.spawnableItem.itemName != "Gold bar");
+                }
+                else
+                {
+                    // Add gold bars to loot table
+                    LethalUpgradesBase.mls.LogInfo("Planet has no gold bar in loot table!");
+                    var sor = StartOfRound.Instance;
+                    var exp_loot_table = new List<SpawnableItemWithRarity>(sor.levels[0].spawnableScrap); // Experimentation, since it has gold bars
+
+                    exp_loot_table.RemoveAll(scrap => scrap.spawnableItem.itemName != "Gold bar");
+                    rm.currentLevel.spawnableScrap = exp_loot_table;
+                }
+
+                while(mod.active)
+                {
+                    await Task.Delay(1000);
+                }
+
+                moon.minScrap *= 2;
+                moon.maxScrap *= 2;
+                moon.spawnableScrap = original_scrap_copy;
+                break;
+            case 16:
+                // 3x scrap amount and value and double health. But...
+                // 3x indoor/outdoor power, eclipsed, and everything can spawn 3x as usual
+                rm = RoundManager.Instance;
+                player = GameNetworkManager.Instance.localPlayerController;
+
+                indoor_delta += rm.currentLevel.maxEnemyPowerCount*2;
+                outdoor_delta += rm.currentLevel.maxOutsideEnemyPowerCount*2;
+                player.health *= 2;
+
+                if(!LNetworkUtils.IsHostOrServer)
+                {
+                    rm.currentLevel.minScrap *= 3;
+                    rm.currentLevel.maxScrap *= 3;
+                    rm.scrapValueMultiplier *= 3;
+                }
+
+                moon = rm.currentLevel;
+                if(moon.currentWeather != LevelWeatherType.Eclipsed)
+                {
+                    moon.currentWeather = LevelWeatherType.Eclipsed;
+
+                    var terminal = LethalUpgradesBase.ActiveTerminal();
+                    var credits = terminal.groupCredits;
+                    var sor = StartOfRound.Instance;
+                    sor.ChangeLevelServerRpc(moon.levelID, newGroupCreditsAmount: credits);
+
+                    MoonWeather weather_credits = new MoonWeather();
+                    weather_credits.new_weather = LevelWeatherType.Eclipsed;
+                    weather_credits.credits = credits;
+
+                    if(LNetworkUtils.IsHostOrServer)
+                    {
+                        LethalUpgradesNetwork.current_weather.SendClients(weather_credits);
+                    }
+                    else
+                    {
+                        LethalUpgradesNetwork.current_weather.SendClients(weather_credits);
+                        LethalUpgradesNetwork.current_weather.SendServer(weather_credits);
+                    }
+                }
+
+                rm.currentLevel.Enemies.ForEach(enemy => enemy.enemyType.MaxCount *= 3);
+                hud = HUDManager.Instance;
+                hud.DisplayTip("What have you done...", "The curse on this modifier is too strong even for me to balance. May God have mercy on all of you...", true);
+
+                bool chance_overwriten = false;
+                tod = TimeOfDay.Instance;
+                while(mod.active)
+                {
+                    if(LNetworkUtils.IsHostOrServer && !chance_overwriten)
+                    {
+                        if(tod == null) continue;
+
+                        chance_overwriten = true;
+                        tod.overrideMeteorChance = 1001;
+                    }
+                    await Task.Delay(1000);
+                }
+
+                if(!LNetworkUtils.IsHostOrServer)
+                {
+                    rm.currentLevel.minScrap /= 3;
+                    rm.currentLevel.maxScrap /= 3;
+                    rm.scrapValueMultiplier = 0.4f;
+                }
+                tod.overrideMeteorChance = -1;
                 break;
         }
     }
@@ -661,7 +866,6 @@ public class RotationalStore
             return;
         }
 
-        if(!hard_mods[0].active && !hard_mods[1].active && !easy_mods[1].active && !easy_mods[2].active && !medium_mods[1].active && !medium_mods[2].active) return;
         if(__instance.inShipPhase) return;
         if(!display_once) return;
 
@@ -759,6 +963,98 @@ public class RotationalStore
         // If no mods active or switching weather, allow travel
         return true;
     }
+
+    [HarmonyPatch(typeof(PlayerControllerB), "DamagePlayer")]
+    [HarmonyPrefix]
+    static void FallDamage(ref int damageNumber, PlayerControllerB __instance, ref bool fallDamage)
+    {
+        if (__instance == null) return;
+        if (__instance != GameNetworkManager.Instance?.localPlayerController) return;
+
+        if(fallDamage && easy_mods[4].active)
+        {
+            LethalUpgradesBase.mls.LogInfo("Increasing fall damage!");
+            damageNumber = Mathf.RoundToInt(damageNumber * 1.10f);
+        }
+    }
+
+    internal static Dictionary<string, float> item_dict = new Dictionary<string, float>();
+    [HarmonyPatch(typeof(GrabbableObject), "LateUpdate")]
+    [HarmonyPostfix]
+    static void AddedWeight(GrabbableObject __instance)
+    {
+        var item_name = __instance.itemProperties.itemName;
+        var player = GameNetworkManager.Instance.localPlayerController;
+        if(player == null) return; 
+
+        if(!easy_mods[5].active)
+        {
+            if(item_dict.Count() > 0)
+            {
+                if(item_dict.ContainsKey(item_name))
+                {
+                    if(__instance.itemProperties.weight == item_dict[item_name])
+                    {
+                        // Reduce object back to original weight
+                        LethalUpgradesBase.mls.LogInfo($"Restored original weight of {item_name}");
+                        __instance.itemProperties.weight -= 0.05f;
+
+                        player = GameNetworkManager.Instance.localPlayerController;
+                        if(__instance.playerHeldBy == player)
+                        {
+                            player.carryWeight -= 0.05f;
+                        }
+                    }
+                }
+            }
+            return;
+        }
+
+        bool is_equipment = false;
+        switch(item_name)
+        {
+            case "Pro-flashlight":
+            case "Shovel":
+            case "Jetpack":
+            case "Lockpicker":
+            case "Radar-booster":
+            case "Stun grenade":
+            case "Boombox":
+            case "Zap gun":
+            case "Belt bag":
+                // Do nothing to equipment
+                is_equipment = true;
+                break;
+        }
+
+
+        // Equipment is filtered out, only scrap past this point
+        if(!is_equipment)
+        {
+            if(item_dict.Count() <= 0 || !item_dict.ContainsKey(item_name))
+            {
+                item_dict.Add(item_name, __instance.itemProperties.weight += 0.05f);
+                __instance.itemProperties.weight += 0.05f;
+
+                if(__instance.playerHeldBy == player)
+                {
+                    player.carryWeight += 0.05f;
+                }
+            }
+            else
+            {
+                if(__instance.itemProperties.weight != item_dict[item_name])
+                {
+                    __instance.itemProperties.weight = item_dict[item_name];
+
+                    if(__instance.playerHeldBy == player)
+                {
+                    player.carryWeight += 0.05f;
+                }
+                }
+            }
+        }
+    }
     #endregion
 
     #region Mod Seeder
@@ -811,8 +1107,8 @@ public class RotationalStore
 
         // Select 1 hard modifier
         random_index = rand.Next(hard_mods.Length);
-        hard_index = random_index;
-        LethalUpgradesNetwork.hard_index.Value = random_index;
+        hard_index = 4;
+        LethalUpgradesNetwork.hard_index.Value = 4;
 
         LethalUpgradesBase.mls.LogInfo("Seeded first set of modifier events!");
     }
@@ -844,6 +1140,14 @@ public class RotationalStore
         LethalUpgradesNetwork.mod6.Value = false;
         LethalUpgradesNetwork.mod7.Value = false;
         LethalUpgradesNetwork.mod8.Value = false;
+        LethalUpgradesNetwork.mod9.Value = false;
+        LethalUpgradesNetwork.mod10.Value = false;
+        LethalUpgradesNetwork.mod11.Value = false;
+        LethalUpgradesNetwork.mod12.Value = false;
+        LethalUpgradesNetwork.mod13.Value = false;
+        LethalUpgradesNetwork.mod14.Value = false;
+        LethalUpgradesNetwork.mod15.Value = false;
+        LethalUpgradesNetwork.mod16.Value = false;
 
         LethalUpgradesBase.mls.LogInfo($"Resetting power delta's");
         var rm = RoundManager.Instance;
