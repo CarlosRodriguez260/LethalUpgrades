@@ -65,7 +65,7 @@ Unfortunately, we couldn't lift the curse on them, so... they come with *slight*
 - More Risk, More Reward: Increase spawnable scrap by 2, but add 2 indoor and outdoor power.
 - Risk of Rain: Remove 2 indoor and outdoor power, but increase meteor shower event chance by 10%.
 - Edmund's Moon: Time moves 15% slower, but decreases amount of scrap by 2.
-- Bouncy House: Jump 10% higher, but gravity increases fall damage by 10%.
+- Bouncy House: Jump 10% higher, but your feet explode on fall damage and take 10% more fall damage.
 - Pound for Pound: Scrap is 10% more valuable, but weighs 5 more pounds.
 
 **Medium Modifiers**

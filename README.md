@@ -65,6 +65,8 @@ Unfortunately, we couldn't lift the curse on them, so... they come with *slight*
 - More Risk, More Reward: Increase spawnable scrap by 2, but add 2 indoor and outdoor power.
 - Risk of Rain: Remove 2 indoor and outdoor power, but increase meteor shower event chance by 10%.
 - Edmund's Moon: Time moves 15% slower, but decreases amount of scrap by 2.
+- Bouncy House: Jump 10% higher, but your feet explode on fall damage and take 10% more fall damage.
+- Pound for Pound: Scrap is 10% more valuable, but weighs 5 more pounds.
 
 **Medium Modifiers**
 - Miller's Moon: Spawnable scrap becomes 20% more valuable, but time moves 25% faster.
@@ -76,6 +78,11 @@ Unfortunately, we couldn't lift the curse on them, so... they come with *slight*
 **Hard Modifiers**
 - Go Play Outside! : Removes all indoor power of the moon, but adds it to outdoor power.
 - Go Play Inside! : Removes all outdoor power of the moon, but adds it to indoor power.
+- Double it and give it to the next person! : 1.5x scrap amount and 1.5x scrap value, but double indoor/outdoor power and max enemy spawns.
+- Midas Touch: Only gold bars spawn as scrap, but scrap amount decreases by half and health reduces to 20.
+
+**God help us all...**
+- The End: 3x scrap amount/value and double health. But... *you don't wanna know*
 
 You can access the store by typing `rot store` in the terminal.
 
@@ -102,8 +109,8 @@ Upgrades are *progressive*, meaning they need to be bought in order, except lege
 As of May 6, 2026, I also added a new rotational modifiers store! \
 This store allows players to pick modifiers that will change their experience when gathering scrap. \
 They provide both an incentive and a drawback to keep things interesting! \
-Currently there are 6 modifiers available: 3 easy, 2 medium, and 1 hard. \
-I want to add more, but I wanted to release these for now so everyone can feel them out.
+Currently there are 16 modifiers available: 6 easy, 5 medium, and 5 hard. \
+Some hard modifiers are *beyond hard*, but yield incredible positives. 
 
 The store system works as follows:
 - When a host loads into their save, modifiers are rolled.
@@ -172,7 +179,7 @@ Extra Commands
 
 ## Multiplayer Status
 
-MULTIPLAYER STATUS: 🟡
+MULTIPLAYER STATUS: 🟢
 - 🔴 Not working
 - 🟡 Testing
 - 🟢 Operational
@@ -183,5 +190,3 @@ Please report any bugs, specially multiplayer ones, to try and patch them ASAP. 
 If you wanna report a bug or recommend something: 
 - Form: https://forms.gle/L3VPdXoyWeRz6P858
 - None serious responses WILL be ignored.
-
-Still a WIP, so bare with me.

@@ -1,5 +1,20 @@
 # Releases
 
+## Version Release 1.4.2
+
+- Fixed bug where some modifiers did not affect scrap correctly.
+- Fixed bug where modifier "The End" did not affect power levels correctly.
+- Fixed bug where player health did not double with "The End" modifier.
+- Fixed bug where modifiers did not wear off or reset when a new quota begins.
+- Fixed bug where modifiers did not wear off or reset when ejected.
+- Fixed "Bouncy House" modifier not making you take more fall damage.
+- Switch description of "Bouncy House" to reflect new changes.
+    + Explosions now spawn at players feet when this modifier is on and they take fall damage.
+
+## Version Release 1.4.1
+
+- Forgot to take out hardcoded hard modifier for testing.
+
 ## Version Release 1.4.0
 
 - Added more modifiers:

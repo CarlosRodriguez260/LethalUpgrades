@@ -24,7 +24,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
 {
     private const string modGUID = "ChuitosLethalUpgrades";
     private const string modName = "Lethal Upgrades Mod";
-    private const string modVersion = "1.3.9";
+    private const string modVersion = "1.4.2";
     private readonly Harmony harmony = new Harmony(modGUID);
     internal static LethalUpgradesBase Instance;
     internal static ManualLogSource mls;
@@ -835,6 +835,7 @@ public class LethalUpgradesNetwork
     public static LNetworkVariable<int> token_meter;
     public static LNetworkVariable<int> client_credits;
     public static LNetworkVariable<UnityEngine.Vector3> shovel_explosion_pos;
+    public static LNetworkVariable<UnityEngine.Vector3> fall_explosion_pos;
     public static bool syncing = false;
 
     // Rotational Store Network Variables
@@ -864,6 +865,7 @@ public class LethalUpgradesNetwork
         syncer = LNetworkEvent.Connect("ChuitosLethalUpgrades_syncer", onServerReceived: OnClientJoinedRequest);
         current_weather = LNetworkMessage<MoonWeather>.Connect("ChuitosLethalUpgrades_current_weather", onServerReceived: HostReceivesWeather, onClientReceived: ClientReceivesWeather, onClientReceivedFromClient: ClientReceivesWeatherFromClient);
         shovel_explosion_pos = LNetworkVariable<UnityEngine.Vector3>.Connect("ChuitosLethalUpgrades_shovel_explosion_pos", UnityEngine.Vector3.zero);
+        fall_explosion_pos = LNetworkVariable<UnityEngine.Vector3>.Connect("ChuitosLethalUpgrades_fall_explosion_pos", UnityEngine.Vector3.zero);
         health_t1 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_health_t1", false);
         health_t2 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_health_t2", false);
         health_t3 = LNetworkVariable<bool>.Connect("ChuitosLethalUpgrades_health_t3", false);
@@ -1405,7 +1407,7 @@ public class LethalUpgradesNetwork
 
                 if(LethalUpgradesBase.show_explosion)
                 {
-                    LethalUpgradesBase.mls.LogInfo("Spawning explosion...");
+                    LethalUpgradesBase.mls.LogInfo("Spawning explosion from shovel...");
                     if(LethalUpgradesBase.shovel_jump)
                     {
                         Landmine.SpawnExplosion(newValue, true, 0, 10, 2, 20);
@@ -1414,6 +1416,20 @@ public class LethalUpgradesNetwork
                     {
                         Landmine.SpawnExplosion(newValue, true, 0, 0, 0, 0);
                     }
+                    LethalUpgradesBase.mls.LogInfo("Explosion spawned!");
+                }
+            };
+
+            fall_explosion_pos.OnValueChanged += (oldValue, newValue) =>
+            {
+                var sor = UnityEngine.Object.FindFirstObjectByType<StartOfRound>();
+                if(sor.inShipPhase) return;
+                // if(sor.shipIsLeaving) return;
+
+                if(RotationalStore.easy_mods[4].active)
+                {
+                    LethalUpgradesBase.mls.LogInfo("Spawning explosion from fall damage...");
+                    Landmine.SpawnExplosion(newValue, true, 0, 0, 0, 10);
                     LethalUpgradesBase.mls.LogInfo("Explosion spawned!");
                 }
             };

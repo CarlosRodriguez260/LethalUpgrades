@@ -64,7 +64,7 @@ internal class UtilityPatching
         }
     }
 
-    static float changer = -0.9f;
+    public static float changer = -0.9f;
     static bool explode_off = false;
     [HarmonyPatch(typeof(Shovel), "HitShovel")]
     [HarmonyPostfix]
@@ -156,9 +156,38 @@ internal class UtilityPatching
     #endregion
 
     #region Utility Tier Legendary
+    // End of round
     [HarmonyPatch(typeof(HUDManager), "FillEndGameStats")]
     [HarmonyPostfix]
-    static void RefreshRoll()
+    static void RefreshRoll1()
+    {
+        LethalUpgradesBase.pre_scum_scredits = 0;
+        if(!LethalUpgradesBase.utility_leg) return;
+
+        if(LethalUpgradesBase.reroll == false)
+        {
+            LethalUpgradesNetwork.reroll.Value = true;
+            LethalUpgradesBase.reroll = true;
+        }
+    }
+
+    [HarmonyPatch(typeof(HUDManager), "DisplayNewDeadline")]
+    [HarmonyPostfix]
+    static void RefreshRoll2()
+    {
+        LethalUpgradesBase.pre_scum_scredits = 0;
+        if(!LethalUpgradesBase.utility_leg) return;
+
+        if(LethalUpgradesBase.reroll == false)
+        {
+            LethalUpgradesNetwork.reroll.Value = true;
+            LethalUpgradesBase.reroll = true;
+        }
+    }
+
+    [HarmonyPatch(typeof(StartOfRound), "EndOfGame")]
+    [HarmonyPostfix]
+    static void RefreshRoll3()
     {
         LethalUpgradesBase.pre_scum_scredits = 0;
         if(!LethalUpgradesBase.utility_leg) return;

@@ -15,7 +15,7 @@ public class RotationalStore
         new Modifier(2, false, "More Risk, More Reward", "Easy", "Increase spawnable scrap by 2, but add 2 indoor and outdoor power.", []),
         new Modifier(3, false, "Risk of Rain", "Easy", "Remove 2 indoor and outdoor power, but increase meteor shower event chance by 10%.", []),
         new Modifier(11, false, "Edmund's Moon", "Easy", "Time moves 15% slower, but decreases amount of scrap by 2.", []),
-        new Modifier(12, false, "Bouncy House", "Easy", "Jump 10% higher, but gravity increases fall damage by 10%.", []),
+        new Modifier(12, false, "Bouncy House", "Easy", "Jump 10% higher, but your feet explode on fall damage and take 10% more fall damage.", []),
         new Modifier(13, false, "Pound for Pound", "Easy", "Scrap is 10% more valuable, but weighs 5 more pounds.", [])
     ];
     public static Modifier[] medium_mods = [
@@ -390,6 +390,8 @@ public class RotationalStore
                         if(tod == null) continue;
 
                         chance_overwriten = true;
+                        if(hard_mods[4].active) return;
+
                         tod.overrideMeteorChance = 100;
                     }
                     await Task.Delay(1000);
@@ -786,13 +788,12 @@ public class RotationalStore
                 // 3x scrap amount and value and double health. But...
                 // 3x indoor/outdoor power, eclipsed, and everything can spawn 3x as usual
                 rm = RoundManager.Instance;
-                player = GameNetworkManager.Instance.localPlayerController;
 
-                indoor_delta += rm.currentLevel.maxEnemyPowerCount*2;
-                outdoor_delta += rm.currentLevel.maxOutsideEnemyPowerCount*2;
-                player.health *= 2;
+                indoor_delta += rm.currentLevel.maxEnemyPowerCount*3;
+                outdoor_delta += rm.currentLevel.maxOutsideEnemyPowerCount*3;
+                GameNetworkManager.Instance.localPlayerController.health *= 2;
 
-                if(!LNetworkUtils.IsHostOrServer)
+                if(LNetworkUtils.IsHostOrServer)
                 {
                     rm.currentLevel.minScrap *= 3;
                     rm.currentLevel.maxScrap *= 3;
@@ -842,7 +843,7 @@ public class RotationalStore
                     await Task.Delay(1000);
                 }
 
-                if(!LNetworkUtils.IsHostOrServer)
+                if(LNetworkUtils.IsHostOrServer)
                 {
                     rm.currentLevel.minScrap /= 3;
                     rm.currentLevel.maxScrap /= 3;
@@ -966,15 +967,28 @@ public class RotationalStore
 
     [HarmonyPatch(typeof(PlayerControllerB), "DamagePlayer")]
     [HarmonyPrefix]
-    static void FallDamage(ref int damageNumber, PlayerControllerB __instance, ref bool fallDamage)
+    static void FallDamage(ref int damageNumber, ref CauseOfDeath causeOfDeath, PlayerControllerB __instance)
     {
         if (__instance == null) return;
         if (__instance != GameNetworkManager.Instance?.localPlayerController) return;
 
-        if(fallDamage && easy_mods[4].active)
+        if(causeOfDeath == CauseOfDeath.Gravity && easy_mods[4].active)
         {
             LethalUpgradesBase.mls.LogInfo("Increasing fall damage!");
             damageNumber = Mathf.RoundToInt(damageNumber * 1.10f);
+
+            float changer = Patches.UtilityPatching.changer;
+            UnityEngine.Vector3 vector_changer = new UnityEngine.Vector3(0, changer, 0);
+            if(changer == -0.9f)
+            {
+                changer = -1f;
+            }
+            else if(changer == -1f)
+            {
+                changer = -0.9f;
+            }
+
+            LethalUpgradesNetwork.fall_explosion_pos.Value = __instance.transform.position + vector_changer;
         }
     }
 
@@ -1063,6 +1077,7 @@ public class RotationalStore
     static void SeedModifiers()
     {
         if(!LNetworkUtils.IsHostOrServer) return;
+        var sor = StartOfRound.Instance;
 
         System.Random rand = new System.Random();
         List<int> selected = new List<int>();
@@ -1107,15 +1122,30 @@ public class RotationalStore
 
         // Select 1 hard modifier
         random_index = rand.Next(hard_mods.Length);
-        hard_index = 4;
-        LethalUpgradesNetwork.hard_index.Value = 4;
-
+        hard_index = random_index;
+        LethalUpgradesNetwork.hard_index.Value = random_index;
         LethalUpgradesBase.mls.LogInfo("Seeded first set of modifier events!");
     }
 
     [HarmonyPatch(typeof(HUDManager), "FillEndGameStats")]
     [HarmonyPrefix]
-    static void ResetModifiers()
+    static void ResetModifiers1()
+    {
+        StopAllModifiers();
+        SeedModifiers();
+    }
+
+    [HarmonyPatch(typeof(HUDManager), "DisplayNewDeadline")]
+    [HarmonyPrefix]
+    static void ResetModifiers2()
+    {
+        StopAllModifiers();
+        SeedModifiers();
+    }
+
+    [HarmonyPatch(typeof(StartOfRound), "EndOfGame")]
+    [HarmonyPrefix]
+    static void ResetModifiers3()
     {
         StopAllModifiers();
         SeedModifiers();

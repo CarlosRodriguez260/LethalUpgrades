@@ -37,23 +37,26 @@ internal class MovementPatching
     #endregion 
 
     #region Movement Tier 2
-    internal static float movement_t2 = 4.6f * 1.10f; // 4.6 is normal, in-game movement speed
+    // internal static float movement_t2 = 4.6f * 1.10f; // 4.6 is normal, in-game movement speed
+    internal static bool apply_once1 = false;
     [HarmonyPatch(typeof(PlayerControllerB), "Update")]
     [HarmonyPostfix]
     static void MovementTier2(PlayerControllerB __instance)
     {
         if (__instance == null) return;
-        if (__instance != GameNetworkManager.Instance?.localPlayerController) return;
+        if (__instance != GameNetworkManager.Instance.localPlayerController) return;
 
-        if(LethalUpgradesBase.movement_t2)
+        if(LethalUpgradesBase.movement_t2 && !apply_once1)
         {
-            __instance.movementSpeed = movement_t2;
+            __instance.movementSpeed *= 1.10f;
+            apply_once1 = true;
         }
     }
     #endregion
 
     #region Movement Tier 3
-    internal static float movement_t3 = 13f * 1.25f;
+    // internal static float movement_t3 = 13f * 1.25f;
+    internal static bool apply_once2 = false;
     [HarmonyPatch(typeof(PlayerControllerB), "Update")]
     [HarmonyPostfix]
     static void MovementTier3(PlayerControllerB __instance)
@@ -61,16 +64,10 @@ internal class MovementPatching
         if(__instance == null) return;
         if(__instance != GameNetworkManager.Instance?.localPlayerController) return;
 
-        // For temp testing of legendary
-        // if(ninja)
-        // {
-        //     __instance.health = 15;
-        // }
-        // REMOVE WHEN DONE
-
-        if(LethalUpgradesBase.movement_t3)
+        if(LethalUpgradesBase.movement_t3 && !apply_once2)
         {
-            __instance.jumpForce = movement_t3;
+            __instance.jumpForce *= 1.25f;
+            apply_once2 = true;
         }
     }
     #endregion
