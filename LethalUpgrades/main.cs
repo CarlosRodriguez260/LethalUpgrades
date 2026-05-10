@@ -1553,14 +1553,14 @@ public class LethalUpgradesNetwork
             {
                 RotationalStore.hard_mods[3].active = newValue;
                 RotationalStore.HardModCallbacks(RotationalStore.hard_mods[3]);
-                LethalUpgradesBase.mls.LogInfo($"Activated mod 14 with new value of {newValue}");
+                LethalUpgradesBase.mls.LogInfo($"Activated mod 15 with new value of {newValue}");
             };
 
             mod16.OnValueChanged += (OldValue, newValue) =>
             {
                 RotationalStore.hard_mods[4].active = newValue;
                 RotationalStore.HardModCallbacks(RotationalStore.hard_mods[4]);
-                LethalUpgradesBase.mls.LogInfo($"Activated mod 15 with new value of {newValue}");
+                LethalUpgradesBase.mls.LogInfo($"Activated mod 16 with new value of {newValue}");
             };
         }
     }

@@ -1,6 +1,6 @@
 {
     "name": "LethalUpgrades",
-    "version_number": "1.4.2",
+    "version_number": "1.4.58",
     "website_url": "https://github.com/CarlosRodriguez260/LethalUpgrades",
     "description": "Adds a progressive upgrade catalog and a system to deploy modifiers to moons!",
     "dependencies": [

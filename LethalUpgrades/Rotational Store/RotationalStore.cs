@@ -41,6 +41,10 @@ public class RotationalStore
     public static float original_indoor = 0;
     public static float outdoor_delta = 0;
     public static float original_outdoor = 0;
+    public static int min_delta = 0;
+    public static int min_subtract = 0;
+    public static int max_delta = 0;
+    public static int max_subtract = 0;
     public static void StoreSetup()
     {
         #region Store Commands
@@ -355,11 +359,11 @@ public class RotationalStore
             case 2:
                 // Spawn 2 more scrap, but add 2 indoor and outdoor power
                 rm = RoundManager.Instance;
-                if (!LNetworkUtils.IsHostOrServer)
-                {
-                    rm.currentLevel.minScrap += 2;
-                    rm.currentLevel.maxScrap += 2;
-                }
+
+                min_delta += 2;
+                min_subtract += 2;
+                max_delta += 2;
+                max_subtract += 2;
                 indoor_delta += 2;
                 outdoor_delta += 2;
 
@@ -404,8 +408,10 @@ public class RotationalStore
                 if(!LNetworkUtils.IsHostOrServer) return;
 
                 rm = RoundManager.Instance;
-                rm.currentLevel.minScrap -= 2;
-                rm.currentLevel.maxScrap -= 2;
+                min_delta -= 2;
+                min_subtract -= 2;
+                max_delta -= 2;
+                max_subtract -= 2;
 
                 bool set_multiplier = false;
                 tod = TimeOfDay.Instance;
@@ -423,8 +429,6 @@ public class RotationalStore
                     await Task.Delay(1000);
                 }
 
-                rm.currentLevel.minScrap += 2;
-                rm.currentLevel.maxScrap += 2;
                 tod.globalTimeSpeedMultiplier /= 0.85f;
                 break;
             case 12:
@@ -550,10 +554,12 @@ public class RotationalStore
                     {
                         rm.scrapValueMultiplier = 0.4f * 1.07f;
                     }
-                    rm.currentLevel.minScrap += 3;
-                    rm.currentLevel.maxScrap += 3;
                 }
 
+                min_delta += 3;
+                min_subtract += 3;
+                max_delta += 3;
+                max_subtract += 3;
                 indoor_delta += 2;
                 outdoor_delta += 2;
                 
@@ -606,9 +612,12 @@ public class RotationalStore
                     // var enemies_copy = rm.currentLevel.Enemies; // This references, does not create a separate copy
                     rm.currentLevel.Enemies.RemoveAll(enemy => enemy.enemyType.enemyName != "Flowerman");
                     rm.currentLevel.Enemies.ForEach(enemy => enemy.enemyType.MaxCount = 10);
-                    rm.currentLevel.minScrap += 5;
-                    rm.currentLevel.maxScrap += 5;
                 }
+
+                min_delta += 5;
+                min_subtract += 5;
+                max_delta += 5;
+                max_subtract += 5;
 
                 while(mod.active)
                 {
@@ -618,34 +627,24 @@ public class RotationalStore
                 if(LNetworkUtils.IsHostOrServer)
                 {
                     rm.currentLevel.Enemies = enemies_copy;
-                    rm.currentLevel.minScrap -= 5;
-                    rm.currentLevel.maxScrap -= 5;
                 }
                 break;
             case 9:
                 // Spawn 1.5x the amount of scrap, but lose half your health
                 rm = RoundManager.Instance;
-                var old_min = rm.currentLevel.minScrap;
-                var old_max = rm.currentLevel.maxScrap;
                 player = GameNetworkManager.Instance.localPlayerController;
-                if(LNetworkUtils.IsHostOrServer)
-                {
-                    var new_min_scrap = rm.currentLevel.minScrap*1.5f;
-                    var new_max_scrap = rm.currentLevel.maxScrap*1.5f;
-                    rm.currentLevel.minScrap = (int)new_min_scrap;
-                    rm.currentLevel.maxScrap = (int)new_max_scrap;
-                }
+                var extra_min = (int)(rm.currentLevel.minScrap * 0.5f);
+                var extra_max = (int)(rm.currentLevel.maxScrap * 0.5f);
+            
+                min_delta += extra_min;
+                min_subtract += extra_min;
+                max_delta += extra_max;
+                max_subtract += extra_max;
                 player.health = player.health / 2;
 
                 while(mod.active)
                 {
                     await Task.Delay(1000);
-                }
-
-                if(LNetworkUtils.IsHostOrServer)
-                {
-                    rm.currentLevel.minScrap = old_min;
-                    rm.currentLevel.maxScrap = old_max;
                 }
                 break;
             case 10:
@@ -716,13 +715,13 @@ public class RotationalStore
                 var enemies_copy = new List<SpawnableEnemyWithRarity>(rm.currentLevel.Enemies);
                 indoor_delta += rm.currentLevel.maxEnemyPowerCount;
                 outdoor_delta += rm.currentLevel.maxOutsideEnemyPowerCount;
+                min_delta += rm.currentLevel.minScrap*2;
+                min_subtract += rm.currentLevel.minScrap*2;
+                max_delta += rm.currentLevel.maxScrap*2;
+                max_subtract += rm.currentLevel.maxScrap*2;
 
-                var old_min_scrap = rm.currentLevel.minScrap;
-                var old_max_scrap = rm.currentLevel.maxScrap;
                 if(LNetworkUtils.IsHostOrServer)
                 {
-                    rm.currentLevel.minScrap *= 2;
-                    rm.currentLevel.maxScrap *= 2;
                     rm.scrapValueMultiplier *= 1.5f;
                     LethalUpgradesBase.mls.LogInfo($"New Min Scrap: {rm.currentLevel.minTotalScrapValue}");
                     LethalUpgradesBase.mls.LogInfo($"New Max Scrap: {rm.currentLevel.maxTotalScrapValue}");
@@ -738,8 +737,6 @@ public class RotationalStore
 
                 if(LNetworkUtils.IsHostOrServer)
                 {
-                    rm.currentLevel.minScrap = old_min_scrap;
-                    rm.currentLevel.maxTotalScrapValue = old_max_scrap;
                     rm.scrapValueMultiplier = 0.4f;
                     rm.currentLevel.Enemies = enemies_copy;
                 }
@@ -753,8 +750,10 @@ public class RotationalStore
                 player.health = 20;
              
                 if(!LNetworkUtils.IsHostOrServer) return;
-                moon.minScrap /= 2;
-                moon.maxScrap /= 2;
+                min_delta -= moon.minScrap / 2;
+                min_subtract -= moon.minScrap / 2;
+                max_delta -= moon.maxScrap / 2;
+                max_subtract -= moon.maxScrap / 2;
 
                 var scrap_list = moon.spawnableScrap;
                 var original_scrap_copy = new List<SpawnableItemWithRarity>(scrap_list);
@@ -780,8 +779,6 @@ public class RotationalStore
                     await Task.Delay(1000);
                 }
 
-                moon.minScrap *= 2;
-                moon.maxScrap *= 2;
                 moon.spawnableScrap = original_scrap_copy;
                 break;
             case 16:
@@ -791,13 +788,15 @@ public class RotationalStore
 
                 indoor_delta += rm.currentLevel.maxEnemyPowerCount*3;
                 outdoor_delta += rm.currentLevel.maxOutsideEnemyPowerCount*3;
+                min_delta += rm.currentLevel.minScrap * 3;
+                min_subtract += rm.currentLevel.minScrap * 3;
+                max_delta += rm.currentLevel.maxScrap * 3;
+                max_subtract += rm.currentLevel.maxScrap * 3;
                 GameNetworkManager.Instance.localPlayerController.health *= 2;
 
                 if(LNetworkUtils.IsHostOrServer)
                 {
-                    rm.currentLevel.minScrap *= 3;
-                    rm.currentLevel.maxScrap *= 3;
-                    rm.scrapValueMultiplier *= 3;
+                    rm.scrapValueMultiplier += 3;
                 }
 
                 moon = rm.currentLevel;
@@ -845,8 +844,6 @@ public class RotationalStore
 
                 if(LNetworkUtils.IsHostOrServer)
                 {
-                    rm.currentLevel.minScrap /= 3;
-                    rm.currentLevel.maxScrap /= 3;
                     rm.scrapValueMultiplier = 0.4f;
                 }
                 tod.overrideMeteorChance = -1;
@@ -861,6 +858,19 @@ public class RotationalStore
     [HarmonyPostfix]
     static void DisplayPower(StartOfRound __instance)
     {
+        var rm = RoundManager.Instance;
+
+        if(min_delta > 0)
+        {
+            rm.currentLevel.minScrap += min_delta;
+            min_delta = 0;
+        }
+        if(max_delta > 0)
+        {
+            rm.currentLevel.maxScrap += max_delta;
+            max_delta = 0;
+        }
+
         if(__instance.inShipPhase && !display_once)
         {
             display_once = true;
@@ -871,7 +881,6 @@ public class RotationalStore
         if(!display_once) return;
 
         var hud = HUDManager.Instance;
-        var rm = RoundManager.Instance;
 
         original_indoor = rm.currentMaxInsidePower;
         original_outdoor = rm.currentLevel.maxOutsideEnemyPowerCount;
@@ -883,7 +892,6 @@ public class RotationalStore
 
         rm.currentMaxInsidePower += indoor_delta;
         rm.currentLevel.maxOutsideEnemyPowerCount += (int)outdoor_delta;
-        
 
         LethalUpgradesBase.mls.LogInfo($"Modified indoor power: {rm.currentMaxInsidePower}");
         LethalUpgradesBase.mls.LogInfo($"Modified outdoor power: {rm.currentLevel.maxOutsideEnemyPowerCount}");
@@ -922,9 +930,9 @@ public class RotationalStore
             value *= 3f;
         }
 
-        if(value > 30f)
+        if(value > 25f)
         {
-            value = 30f;
+            value = 25f;
         }
     }
 
@@ -1184,14 +1192,29 @@ public class RotationalStore
         if(indoor_delta != 0 || hard_mods[1].active)
         {
             LethalUpgradesBase.mls.LogInfo($"Resetting indoor delta of {indoor_delta}");
-            rm.currentMaxInsidePower = original_indoor;
+            rm.currentMaxInsidePower -= indoor_delta;
             indoor_delta = 0;
         }
         if(outdoor_delta != 0 || hard_mods[0].active)
         {
             LethalUpgradesBase.mls.LogInfo($"Resetting outdoor delta of {outdoor_delta}");
-            rm.currentLevel.maxOutsideEnemyPowerCount = (int)original_outdoor;
+            rm.currentLevel.maxOutsideEnemyPowerCount -= (int)outdoor_delta;
             outdoor_delta = 0;
+        }
+
+        if(min_subtract != 0)
+        {
+            LethalUpgradesBase.mls.LogInfo($"Resetting min scrap delta of {min_subtract}");
+            rm.currentLevel.minScrap -= min_subtract;
+            min_delta = 0;
+            min_subtract = 0;
+        }
+        if(max_subtract != 0)
+        {
+            LethalUpgradesBase.mls.LogInfo($"Resetting max scrap delta of {max_subtract}");
+            rm.currentLevel.maxScrap -= max_subtract;
+            max_delta = 0;
+            max_subtract = 0;
         }
     }
 }

@@ -1,5 +1,18 @@
 # Releases
 
+## Version Release 1.4.58
+
+- Reworked power system to better keep track of power being added or subtracted.
+
+## Version Release 1.4.50
+
+- Fixed previous fix not working (lol).
+- Thunderstore is horrible at managing versions wtf.
+
+## Version Release 1.4.3
+
+- Fixed "Shaped Glass" modifier not correctly resetting scrap spawn amounts.
+
 ## Version Release 1.4.2
 
 - Fixed bug where some modifiers did not affect scrap correctly.
