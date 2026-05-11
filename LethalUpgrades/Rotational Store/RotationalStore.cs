@@ -802,7 +802,7 @@ public class RotationalStore
 
                 if(LNetworkUtils.IsHostOrServer)
                 {
-                    rm.scrapValueMultiplier += 3;
+                    rm.scrapValueMultiplier *= 3;
                 }
 
                 moon = rm.currentLevel;

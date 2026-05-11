@@ -1,5 +1,9 @@
 # Releases
 
+## Version Release 1.4.64
+
+- Fixed a bug where "The End" modifier increased loot value multiplier by approximately 1000%. Oops.
+
 ## Version Release 1.4.62
 
 - More bug fixes.
