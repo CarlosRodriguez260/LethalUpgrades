@@ -1,5 +1,10 @@
 # Releases
 
+## Version Release 1.4.62
+
+- More bug fixes.
+- Health-lowering changes by modifiers should update on the hud now.
+
 ## Version Release 1.4.60
 
 - Fixed health-adding upgrades overriding modifiers that affected health.

@@ -121,7 +121,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
         harmony.PatchAll(typeof(HealthPatching));
         harmony.PatchAll(typeof(StaminaPatching));
         harmony.PatchAll(typeof(MovementPatching));
-        harmony.PatchAll(typeof(DebugPatching)); //Uncomment to have logs in BepInEx console
+        // harmony.PatchAll(typeof(DebugPatching)); //Uncomment to have logs in BepInEx console
         harmony.PatchAll(typeof(TokenPatching));
         harmony.PatchAll(typeof(HostClientPatching));
         harmony.PatchAll(typeof(UtilityPatching));

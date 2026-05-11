@@ -5,6 +5,7 @@ using LethalNetworkAPI.Utils;
 using UnityEngine.AI;
 using GameNetcodeStuff;
 using UnityEngine;
+using LethalUpgrades.Patches;
 
 namespace LethalUpgrades.Store;
 
@@ -505,6 +506,7 @@ public class RotationalStore
         RoundManager rm;
         PlayerControllerB player;
         TimeOfDay tod;
+        HUDManager hud;
         switch(mod.mod_id)
         {
             case 4:
@@ -633,6 +635,7 @@ public class RotationalStore
                 // Spawn 1.5x the amount of scrap, but lose half your health
                 rm = RoundManager.Instance;
                 player = GameNetworkManager.Instance.localPlayerController;
+                hud = HUDManager.Instance;
                 var extra_min = (int)(rm.currentLevel.minScrap * 0.5f);
                 var extra_max = (int)(rm.currentLevel.maxScrap * 0.5f);
             
@@ -641,6 +644,7 @@ public class RotationalStore
                 max_delta += extra_max;
                 max_subtract += extra_max;
                 player.health = player.health / 2;
+                hud.UpdateHealthUI(player.health, hurtPlayer: false);
 
                 while(mod.active)
                 {
@@ -747,7 +751,9 @@ public class RotationalStore
                 rm = RoundManager.Instance;
                 player = GameNetworkManager.Instance.localPlayerController;
                 moon = rm.currentLevel;
+                hud = HUDManager.Instance;
                 player.health = 20;
+                hud.UpdateHealthUI(player.health, hurtPlayer: false);
              
                 if(!LNetworkUtils.IsHostOrServer) return;
                 min_delta -= moon.minScrap / 2;
@@ -1186,6 +1192,8 @@ public class RotationalStore
         LethalUpgradesNetwork.mod14.Value = false;
         LethalUpgradesNetwork.mod15.Value = false;
         LethalUpgradesNetwork.mod16.Value = false;
+
+        HealthPatching.apply_once = false;
 
         LethalUpgradesBase.mls.LogInfo($"Resetting power delta's");
         var rm = RoundManager.Instance;

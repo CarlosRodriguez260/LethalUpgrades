@@ -14,6 +14,7 @@ namespace LethalUpgrades.Patches;
 internal class HealthPatching
 {
     #region Health Tier 1 and 3
+    public static bool apply_once = false;
     [HarmonyPatch(typeof(StartOfRound), "Update")]
     [HarmonyPostfix]
     static void HealthTier13(StartOfRound __instance) 
@@ -22,16 +23,16 @@ internal class HealthPatching
         { 
             if (__instance.inShipPhase)
             {
-                for(int i = 0; i < __instance.allPlayerScripts.Length; i++)
+                var player = GameNetworkManager.Instance.localPlayerController;
+                if(LethalUpgradesBase.health_t3 && player.health <= 100 && !apply_once)
                 {
-                    if(LethalUpgradesBase.health_t3 && __instance.allPlayerScripts[i].health <= 100)
-                    {
-                        __instance.allPlayerScripts[i].health = 150;
-                    }
-                    else if(LethalUpgradesBase.health_t1 && __instance.allPlayerScripts[i].health <= 100)
-                    {
-                        __instance.allPlayerScripts[i].health = 120;
-                    }
+                    player.health = 150;
+                    apply_once = true;
+                }
+                else if(LethalUpgradesBase.health_t1 && player.health <= 100 && !apply_once)
+                {
+                    player.health = 120;
+                    apply_once = true;
                 }
             }
         } 
