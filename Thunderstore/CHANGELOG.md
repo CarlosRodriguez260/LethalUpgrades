@@ -1,5 +1,10 @@
 # Releases
 
+## Version Release 1.4.60
+
+- Fixed health-adding upgrades overriding modifiers that affected health.
+- Fixed movement-increasing upgrades overriding modifiers that affected player speed.
+
 ## Version Release 1.4.58
 
 - Reworked power system to better keep track of power being added or subtracted.

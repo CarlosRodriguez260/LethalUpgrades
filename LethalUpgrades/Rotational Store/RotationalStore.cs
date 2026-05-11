@@ -783,7 +783,7 @@ public class RotationalStore
                 break;
             case 16:
                 // 3x scrap amount and value and double health. But...
-                // 3x indoor/outdoor power, eclipsed, and everything can spawn 3x as usual
+                // 4x indoor/outdoor power, eclipsed, and everything can spawn 3x as usual
                 rm = RoundManager.Instance;
 
                 indoor_delta += rm.currentLevel.maxEnemyPowerCount*3;
@@ -860,12 +860,12 @@ public class RotationalStore
     {
         var rm = RoundManager.Instance;
 
-        if(min_delta > 0)
+        if(min_delta != 0)
         {
             rm.currentLevel.minScrap += min_delta;
             min_delta = 0;
         }
-        if(max_delta > 0)
+        if(max_delta != 0)
         {
             rm.currentLevel.maxScrap += max_delta;
             max_delta = 0;
