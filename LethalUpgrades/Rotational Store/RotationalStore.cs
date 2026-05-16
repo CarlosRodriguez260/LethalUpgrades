@@ -1170,6 +1170,9 @@ public class RotationalStore
     [HarmonyPrefix]
     static void StopAllModifiers()
     {
+        // When host disconnects, save data regarding upgrades
+        SaveLoadUpgradesPatching.SaveAllUpgradeData();
+
         easy_mods[easy_indexes.easy_ind1].active = false;
         easy_mods[easy_indexes.easy_ind2].active = false;
         easy_mods[easy_indexes.easy_ind3].active = false;

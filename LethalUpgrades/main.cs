@@ -4,10 +4,14 @@ using HarmonyLib;
 using TerminalApi.Classes;
 using static TerminalApi.TerminalApi;
 using LethalModDataLib.Attributes;
+using LethalModDataLib.Helpers;
+using LethalModDataLib.Features;
+using LethalModDataLib.Enums;
 using LethalNetworkAPI;
 using LethalNetworkAPI.Utils;
 using LethalUpgrades.Patches;
 using LethalUpgrades.Store;
+using GameNetcodeStuff;
 
 
 
@@ -24,72 +28,71 @@ public class LethalUpgradesBase : BaseUnityPlugin
 {
     private const string modGUID = "ChuitosLethalUpgrades";
     private const string modName = "Lethal Upgrades Mod";
-    private const string modVersion = "1.4.2";
+    private const string modVersion = "1.4.70";
     private readonly Harmony harmony = new Harmony(modGUID);
     internal static LethalUpgradesBase Instance;
     internal static ManualLogSource mls;
     internal static ConfigurationController ConfigManager;
 
-    [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave, BaseKey = "chuito_tokens")]
+    [ModData(LethalModDataLib.Enums.SaveWhen.Manual, LethalModDataLib.Enums.LoadWhen.Manual, LethalModDataLib.Enums.SaveLocation.CurrentSave, BaseKey = "chuito_tokens")]
     public static int tokens = 0;
 
-    [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave, BaseKey = "chuito_token_meter")]
+    [ModData(LethalModDataLib.Enums.SaveWhen.Manual, LethalModDataLib.Enums.LoadWhen.Manual, LethalModDataLib.Enums.SaveLocation.CurrentSave, BaseKey = "chuito_token_meter")]
     public static int token_meter = 0;
 
-    [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave, BaseKey = "chuito_health_t1")]
+    [ModData(LethalModDataLib.Enums.SaveWhen.Manual, LethalModDataLib.Enums.LoadWhen.Manual, LethalModDataLib.Enums.SaveLocation.CurrentSave, BaseKey = "chuito_health_t1")]
     public static bool health_t1 = false;
 
-    [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave, BaseKey = "chuito_health_t2")]
+    [ModData(LethalModDataLib.Enums.SaveWhen.Manual, LethalModDataLib.Enums.LoadWhen.Manual, LethalModDataLib.Enums.SaveLocation.CurrentSave, BaseKey = "chuito_health_t2")]
     public static bool health_t2 = false;
 
-    [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave, BaseKey = "chuito_health_t3")]
+    [ModData(LethalModDataLib.Enums.SaveWhen.Manual, LethalModDataLib.Enums.LoadWhen.Manual, LethalModDataLib.Enums.SaveLocation.CurrentSave, BaseKey = "chuito_health_t3")]
     public static bool health_t3 = false;
 
-    [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave, BaseKey = "chuito_health_leg")]
+    [ModData(LethalModDataLib.Enums.SaveWhen.Manual, LethalModDataLib.Enums.LoadWhen.Manual, LethalModDataLib.Enums.SaveLocation.CurrentSave, BaseKey = "chuito_health_leg")]
     public static bool health_leg = false;
 
-    [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave, BaseKey = "chuito_stamina_t1")]
+    [ModData(LethalModDataLib.Enums.SaveWhen.Manual, LethalModDataLib.Enums.LoadWhen.Manual, LethalModDataLib.Enums.SaveLocation.CurrentSave, BaseKey = "chuito_stamina_t1")]
     public static bool stamina_t1 = false;
 
-    [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave, BaseKey = "chuito_stamina_t2")]
+    [ModData(LethalModDataLib.Enums.SaveWhen.Manual, LethalModDataLib.Enums.LoadWhen.Manual, LethalModDataLib.Enums.SaveLocation.CurrentSave, BaseKey = "chuito_stamina_t2")]
     public static bool stamina_t2 = false;
 
-    [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave, BaseKey = "chuito_stamina_t3")]
+    [ModData(LethalModDataLib.Enums.SaveWhen.Manual, LethalModDataLib.Enums.LoadWhen.Manual, LethalModDataLib.Enums.SaveLocation.CurrentSave, BaseKey = "chuito_stamina_t3")]
     public static bool stamina_t3 = false;
 
-    [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave, BaseKey = "chuito_stamina_leg")]
+    [ModData(LethalModDataLib.Enums.SaveWhen.Manual, LethalModDataLib.Enums.LoadWhen.Manual, LethalModDataLib.Enums.SaveLocation.CurrentSave, BaseKey = "chuito_stamina_leg")]
     public static bool stamina_leg = false;
 
-    [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave, BaseKey = "chuito_movement_t1")]
+    [ModData(LethalModDataLib.Enums.SaveWhen.Manual, LethalModDataLib.Enums.LoadWhen.Manual, LethalModDataLib.Enums.SaveLocation.CurrentSave, BaseKey = "chuito_movement_t1")]
     public static bool movement_t1 = false;
 
-    [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave, BaseKey = "chuito_movement_t2")]
+    [ModData(LethalModDataLib.Enums.SaveWhen.Manual, LethalModDataLib.Enums.LoadWhen.Manual, LethalModDataLib.Enums.SaveLocation.CurrentSave, BaseKey = "chuito_movement_t2")]
     public static bool movement_t2 = false;
 
-    [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave, BaseKey = "chuito_movement_t3")]
+    [ModData(LethalModDataLib.Enums.SaveWhen.Manual, LethalModDataLib.Enums.LoadWhen.Manual, LethalModDataLib.Enums.SaveLocation.CurrentSave, BaseKey = "chuito_movement_t3")]
     public static bool movement_t3 = false;
 
-    [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave, BaseKey = "chuito_movement_leg")]
+    [ModData(LethalModDataLib.Enums.SaveWhen.Manual, LethalModDataLib.Enums.LoadWhen.Manual, LethalModDataLib.Enums.SaveLocation.CurrentSave, BaseKey = "chuito_movement_leg")]
     public static bool movement_leg = false;
 
-    [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave, BaseKey = "chuito_utility_t1")]
+    [ModData(LethalModDataLib.Enums.SaveWhen.Manual, LethalModDataLib.Enums.LoadWhen.Manual, LethalModDataLib.Enums.SaveLocation.CurrentSave, BaseKey = "chuito_utility_t1")]
     public static bool utility_t1 = false;
 
-    [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave, BaseKey = "chuito_utility_t2")]
+    [ModData(LethalModDataLib.Enums.SaveWhen.Manual, LethalModDataLib.Enums.LoadWhen.Manual, LethalModDataLib.Enums.SaveLocation.CurrentSave, BaseKey = "chuito_utility_t2")]
     public static bool utility_t2 = false;
 
-    [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave, BaseKey = "chuito_utility_t3")]
+    [ModData(LethalModDataLib.Enums.SaveWhen.Manual, LethalModDataLib.Enums.LoadWhen.Manual, LethalModDataLib.Enums.SaveLocation.CurrentSave, BaseKey = "chuito_utility_t3")]
     public static bool utility_t3 = false;
 
-    [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave, BaseKey = "chuito_utility_leg")]
+    [ModData(LethalModDataLib.Enums.SaveWhen.Manual, LethalModDataLib.Enums.LoadWhen.Manual, LethalModDataLib.Enums.SaveLocation.CurrentSave, BaseKey = "chuito_utility_leg")]
     public static bool utility_leg = false;
 
-    [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave, BaseKey = "chuito_reroll")]
+    [ModData(LethalModDataLib.Enums.SaveWhen.Manual, LethalModDataLib.Enums.LoadWhen.Manual, LethalModDataLib.Enums.SaveLocation.CurrentSave, BaseKey = "chuito_reroll")]
     public static bool reroll = false;
 
-    [ModData(LethalModDataLib.Enums.SaveWhen.OnSave, LethalModDataLib.Enums.LoadWhen.OnLoad, LethalModDataLib.Enums.SaveLocation.CurrentSave, BaseKey = "chuito_pre_scum_scredits")]
+    [ModData(LethalModDataLib.Enums.SaveWhen.Manual, LethalModDataLib.Enums.LoadWhen.Manual, LethalModDataLib.Enums.SaveLocation.CurrentSave, BaseKey = "chuito_pre_scum_scredits")]
     public static int pre_scum_scredits = 0;
-    
     public static bool show_explosion = true;
     public static bool shovel_jump = false;
 
@@ -146,6 +149,7 @@ public class LethalUpgradesBase : BaseUnityPlugin
         harmony.PatchAll(typeof(HostClientPatching));
         harmony.PatchAll(typeof(UtilityPatching));
         harmony.PatchAll(typeof(RotationalStore));
+        harmony.PatchAll(typeof(SaveLoadUpgradesPatching));
         ConfigManager = new ConfigurationController(Config);
 
         LethalUpgradesNetwork.Initiate();

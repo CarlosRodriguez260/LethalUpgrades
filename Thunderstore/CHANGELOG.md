@@ -1,5 +1,9 @@
 # Releases
 
+## Version Release 1.4.70
+
+- Massively reworked save/load system for upgrades to avoid conflicts in modpacks.
+
 ## Version Release 1.4.65
 
 - Fixed a bug where health upgrades did not reapply after ejecting.
