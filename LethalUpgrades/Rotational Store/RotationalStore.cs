@@ -1163,6 +1163,7 @@ public class RotationalStore
     {
         StopAllModifiers();
         SeedModifiers();
+        HealthPatching.apply_once = false;
     }
 
     [HarmonyPatch(typeof(GameNetworkManager), "Disconnect")]

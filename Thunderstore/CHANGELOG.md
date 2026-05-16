@@ -1,5 +1,10 @@
 # Releases
 
+## Version Release 1.4.65
+
+- Fixed a bug where health upgrades did not reapply after ejecting.
+- Attempt at trying to fix upgrades not saving in game when mods conflict with LethalModDataLib.
+
 ## Version Release 1.4.64
 
 - Fixed a bug where "The End" modifier increased loot value multiplier by approximately 1000%. Oops.
